@@ -3,33 +3,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
-    <style>
-      #startButton {
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        z-index: 999;
-        padding: 15px 30px;
-        font-size: 18px;
-        background-color: #ff3366;
-        color: white;
-        border: none;
-        border-radius: 8px;
-        font-weight: bold;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-        cursor: pointer;
-      }
-    </style>
   </head>
   <body style="margin: 0; overflow: hidden;">
-    <!-- Кнопка розблокування медіа для мобільних браузерів -->
-    <button id="startButton">Увімкнути AR зі звуком</button>
-
-    <a-scene id="arScene" embedded mindar-image="imageTargetSrc: targets.mind;" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false" style="display: none;">
+    <a-scene mindar-image="imageTargetSrc: targets.mind;" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
       <a-assets>
-        <!-- Нове пряме посилання на відео з Catbox -->
-        <video id="my-video" src="https://files.catbox.moe/n1b3nt.mp4" preload="auto" response-type="arraybuffer" crossorigin="anonymous" webkit-playsinline playsinline></video>
+        <!-- Відео зі звуком із твого Catbox -->
+        <video id="my-video" src="https://files.catbox.moe/ytgsmo.mp4" preload="auto" response-type="arraybuffer" crossorigin="anonymous" webkit-playsinline playsinline></video>
       </a-assets>
 
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
@@ -40,24 +19,14 @@
     </a-scene>
 
     <script>
-      const startButton = document.querySelector("#startButton");
-      const arScene = document.querySelector("#arScene");
       const videoElement = document.querySelector("#my-video");
       const targetEntity = document.querySelector('[mindar-image-target]');
 
-      startButton.addEventListener("click", () => {
-        startButton.style.display = "none";
-        arScene.style.display = "block";
-        
-        videoElement.play().then(() => {
-          videoElement.pause();
-          videoElement.currentTime = 0;
-        }).catch(e => console.log(e));
-      });
-
       targetEntity.addEventListener("targetFound", event => {
-        videoElement.muted = false;
-        videoElement.play();
+        videoElement.muted = false; // Звук увімкнено
+        videoElement.play().catch(error => {
+          console.log("Audio/video play blocked:", error);
+        });
       });
       
       targetEntity.addEventListener("targetLost", event => {
