@@ -2,7 +2,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>WebAR Stable Spatial Audio</title>
+    <title>WebAR Distance Volume Stable</title>
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
     
@@ -98,7 +98,7 @@
         font-weight: bold;
         pointer-events: none;
         letter-spacing: 0.5px;
-        text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+        text-shadow: 0 1px 4px rgba(0,0,0,0.8);
       }
     </style>
   </head>
@@ -112,7 +112,7 @@
 
     <div id="scan-instruction">📍 Наведіть камеру на зображення</div>
     <div id="sound-toggle">🔇</div>
-    <div id="time-badge">07:51 | Fixed Audio</div>
+    <div id="time-badge">08:00 | Smart Volume</div>
 
     <!-- Фільтри проти тремтіння (jitter) -->
     <a-scene mindar-image="imageTargetSrc: targets.mind; filterMinCF: 0.001; filterBeta: 10; warmupTolerance: 5; missTolerance: 10;" 
@@ -154,11 +154,14 @@
       let baseScale = 1;
       let currentScale = 1;
 
-      // Web Audio API для стабільного об'ємного звуку без втрати гучності
+      // Web Audio API змінні для об'ємного звуку та динамічної гучності за дистанцією
       let audioCtx = null;
       let pannerNode = null;
+      let gainNode = null;
       let sourceNode = null;
       let targetWorldPos = new THREE.Vector3();
+      let camPos = new THREE.Vector3();
+      const cameraObj = document.querySelector('a-camera').object3D;
 
       function initSpatialAudio() {
         if (audioCtx) return;
@@ -168,38 +171,65 @@
           
           sourceNode = audioCtx.createMediaElementSource(videoElement);
           pannerNode = audioCtx.createPanner();
+          gainNode = audioCtx.createGain(); // Вузол для керування гучністю залежно від дистанції
           
-          // Налаштування: панорамування є, але затухання за дистанцією вимкнено (гучність завжди 100%)
+          // Налаштування 3D панорамування без автоматичного затухання
           pannerNode.panningModel = 'HRTF';
           pannerNode.distanceModel = 'linear';
           pannerNode.refDistance = 1;
           pannerNode.maxDistance = 10000;
-          pannerNode.rolloffFactor = 0; // Робить звук стабільним на будь-якій відстані!
+          pannerNode.rolloffFactor = 0; 
 
+          // Ланцюжок: джерело -> панорамування (об'єм) -> регулятор гучності -> динаміки
           sourceNode.connect(pannerNode);
-          pannerNode.connect(audioCtx.destination);
+          pannerNode.connect(gainNode);
+          gainNode.connect(audioCtx.destination);
         } catch (e) {
           console.log("Spatial audio init warning:", e);
         }
       }
 
-      function updateAudioPosition() {
-        if (pannerNode && targetEntity) {
+      // Головний цикл розрахунку позиції об'єкта і відстані до камери
+      function updateAudioParameters() {
+        if (pannerNode && gainNode && targetEntity) {
           targetEntity.object3D.getWorldPosition(targetWorldPos);
+          cameraObj.getWorldPosition(camPos);
+
+          // 1. Оновлюємо 3D координати для об'ємного звуку (зліва/справа)
           pannerNode.positionX.value = targetWorldPos.x;
           pannerNode.positionY.value = targetWorldPos.y;
           pannerNode.positionZ.value = targetWorldPos.z;
+
+          // 2. Рахуємо реальну відстань від камери до цілі
+          const distance = camPos.distanceTo(targetWorldPos);
+
+          // 3. Логіка гучності за відстанню:
+          // До ~1.2 метра (нормальна або близька відстань) — максимум (1.0)
+          // Якщо відходимо далі (наприклад, до 4-5 метрів) — плавно знижуємо до мінімуму 0.6
+          let targetGain = 1.0;
+          if (distance > 1.2) {
+            let factor = (distance - 1.2) / (4.0 - 1.2);
+            factor = Math.max(0, Math.min(1, factor)); // Обмежуємо від 0 до 1
+            targetGain = 1.0 - factor * (1.0 - 0.6);   // Плавне зниження до 0.6
+          }
+
+          // Застосовуємо гучність (якщо користувач не вимкнув звук кнопкою)
+          if (!isUserMuted) {
+            gainNode.gain.value = targetGain;
+          } else {
+            gainNode.gain.value = 0;
+          }
         }
-        requestAnimationFrame(updateAudioPosition);
+        requestAnimationFrame(updateAudioParameters);
       }
 
-      // Клік по стартовому екрану — тільки розблокування, звук НЕ грає до пошуку мітки
+      // Клік по стартовому екрану — розблокування
       overlay.addEventListener("click", () => {
         isUnlocked = true;
         videoElement.muted = true; // Запускаємо беззвучно для розблокування мобільним браузером
 
         initSpatialAudio();
-        requestAnimationFrame(updateAudioPosition);
+        requestAnimationFrame(updateAudioParameters);
 
         overlay.style.opacity = "0";
         setTimeout(() => {
@@ -219,11 +249,13 @@
       // Кнопка звуку
       soundToggle.addEventListener("click", () => {
         isUserMuted = !isUserMuted;
-        videoElement.muted = isUserMuted;
         soundToggle.textContent = isUserMuted ? "🔇" : "🔊";
+        if (gainNode) {
+          gainNode.gain.value = isUserMuted ? 0 : 1.0;
+        }
       });
 
-      // Знайшли мітку — запускаємо і звук, і відео одночасно!
+      // Знайшли мітку — запускаємо відео
       targetEntity.addEventListener("targetFound", () => {
         if (!isUnlocked) return;
         if (fadeOutTimeout) clearTimeout(fadeOutTimeout);
@@ -234,7 +266,7 @@
           audioCtx.resume();
         }
 
-        videoElement.muted = isUserMuted;
+        videoElement.muted = true; // Звук контролюється через gainNode
         const playPromise = videoElement.play();
         if (playPromise !== undefined) {
           playPromise.catch(err => console.log("Play error:", err));
@@ -242,7 +274,7 @@
         videoPlane.emit("showVideo");
       });
       
-      // Втратили мітку — плавно ховаємо і ставимо на паузу
+      // Втратили мітку — пауза
       targetEntity.addEventListener("targetLost", () => {
         if (!isUnlocked) return;
         
