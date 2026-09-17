@@ -41,6 +41,22 @@
       background: #000;
     }
 
+    /* === ІНДИКАТОР ЧАСУ ОНОВЛЕННЯ (правий нижній кут) === */
+    #build-time {
+      position: fixed;
+      right: calc(8px + env(safe-area-inset-right));
+      bottom: calc(6px + env(safe-area-inset-bottom));
+      font-size: 10px;
+      line-height: 1.2;
+      color: rgba(255, 255, 255, 0.45);
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+      letter-spacing: 0.3px;
+      z-index: 10002;
+      pointer-events: none;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+      user-select: none;
+    }
+
     #loading {
       position: fixed; inset: 0;
       background: #0a0a0a;
@@ -119,6 +135,9 @@
 
   <div id="error-msg"></div>
 
+  <!-- Індикатор часу оновлення коду -->
+  <div id="build-time">оновлено: —</div>
+
   <a-scene
     mindar-image="imageTargetSrc: ./targets.mind; uiLoading: no; uiScanning: no; uiError: no; maxTrack: 1; filterMinCF: 0.0001; filterBeta: 0.001; warmupTolerance: 5; missTolerance: 5;"
     vr-mode-ui="enabled: false"
@@ -130,11 +149,6 @@
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
     <a-entity mindar-image-target="targetIndex: 0">
-      <!--
-        Використовуємо a-plane + ВЛАСНИЙ компонент ar-video-texture,
-        який гарантовано оновлює текстуру на iOS Safari.
-        Розмір площини підлаштовується під пропорції відео.
-      -->
       <a-plane
         id="ar-video-plane"
         ar-video-texture="src: https://files.catbox.moe/y5fotd.mp4"
@@ -149,21 +163,39 @@
 
   <script>
     // ============================================================
+    // ІНДИКАТОР ЧАСУ ОНОВЛЕННЯ КОДУ (правий нижній кут)
+    // Формат: "оновлено: 17.09.2026 16:48"
+    // Встановіть вручну BUILD_TIME нижче або залиште автооновлення.
+    // ============================================================
+    (function setBuildTime() {
+      // 🔧 ВАРІАНТ 1: захардкодьте свою дату/час оновлення
+      // const BUILD_TIME = new Date('2026-09-17T16:48:00');
+
+      // 🔧 ВАРІАНТ 2: автоматично — час завантаження сторінки
+      const BUILD_TIME = new Date();
+
+      const pad = (n) => String(n).padStart(2, '0');
+      const d = BUILD_TIME;
+      const formatted =
+        `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()} ` +
+        `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+
+      document.getElementById('build-time').textContent = 'оновлено: ' + formatted;
+    })();
+
+    // ============================================================
     // КАСТОМНИЙ A-FRAME КОМПОНЕНТ: ar-video-texture
-    // Створює <video>, робить THREE.VideoTexture і оновлює її
-    // вручну — це фіксить чорний квадрат на iOS Safari.
     // ============================================================
     AFRAME.registerComponent('ar-video-texture', {
       schema: {
         src: { type: 'string' },
-        width: { type: 'number', default: 1 } // базова ширина у світі A-Frame
+        width: { type: 'number', default: 1 }
       },
 
       init: function () {
         const el = this.el;
         const data = this.data;
 
-        // 1. Створюємо <video> вручну, з усіма потрібними атрибутами для iOS
         const video = document.createElement('video');
         video.setAttribute('src', data.src);
         video.setAttribute('crossorigin', 'anonymous');
@@ -171,7 +203,7 @@
         video.setAttribute('webkit-playsinline', '');
         video.setAttribute('preload', 'auto');
         video.setAttribute('loop', '');
-        video.muted = true; // спочатку muted, розблокуємо через кнопку
+        video.muted = true;
         video.style.position = 'absolute';
         video.style.left = '-9999px';
         video.style.width = '1px';
@@ -180,18 +212,12 @@
 
         this.video = video;
 
-        // 2. Чекаємо метадані — дізнаємось реальні пропорції відео
         video.addEventListener('loadedmetadata', () => {
           const vw = video.videoWidth;
           const vh = video.videoHeight;
           if (!vw || !vh) return;
 
           const aspect = vw / vh;
-
-          // Площина: довша сторона = width зі schema
-          // Наприклад width = 1, тоді:
-          // - якщо відео горизонтальне: w = 1, h = 1/aspect
-          // - якщо вертикальне: w = 1 * aspect, h = 1
           let planeW, planeH;
           if (aspect >= 1) {
             planeW = data.width;
@@ -203,10 +229,9 @@
 
           el.setAttribute('width', planeW);
           el.setAttribute('height', planeH);
-          console.log(`✅ Пропорції відео: ${vw}x${vh} (aspect ${aspect.toFixed(3)}) → ${planeW.toFixed(3)} x ${planeH.toFixed(3)}`);
+          console.log(`✅ Пропорції відео: ${vw}x${vh} → ${planeW.toFixed(3)} x ${planeH.toFixed(3)}`);
         });
 
-        // 3. Створюємо THREE.VideoTexture і ПРИВ'ЯЗУЄМО до матеріалу A-Frame
         video.addEventListener('canplay', () => {
           const mesh = el.getObject3D('mesh');
           if (!mesh) return;
@@ -227,42 +252,25 @@
 
           this.texture = texture;
           console.log('✅ VideoTexture прив\'язана до матеріалу');
-
-          // 4. Запускаємо оновлення текстури кожен кадр — ЦЕ ФІКС для iOS
-          this.tick = this.tick.bind(this);
-          el.sceneEl.object3D.add(this._dummyTick());
         });
 
-        video.addEventListener('error', (e) => {
-          console.error('❌ Помилка відео:', e);
+        video.addEventListener('error', () => {
           showError('Не вдалося завантажити відео. Перевірте посилання.');
         });
 
-        // 5. Спроба запустити (може бути заблокована до user gesture)
         video.load();
       },
 
-      // Хак: A-Frame викликає tick() лише у компонентів, що мають цю функцію
-      _dummyTick: function () {
-        return { tick: () => {} };
-      },
-
       tick: function () {
-        // Якщо відео грає, THREE.VideoTexture сама оновлюється,
-        // але для iOS Safari потрібно іноді «пінувати» needsUpdate
         if (this.video && !this.video.paused && this.texture) {
           this.texture.needsUpdate = true;
         }
       },
 
-      // Публічні методи — використаємо в основному скрипті
       play: async function () {
         if (!this.video) return;
-        try {
-          await this.video.play();
-        } catch (e) {
-          console.warn('play() blocked:', e);
-        }
+        try { await this.video.play(); }
+        catch (e) { console.warn('play() blocked:', e); }
       },
 
       pause: function () {
@@ -297,7 +305,6 @@
       setTimeout(() => errorMsg.classList.remove('show'), 6000);
     }
 
-    // Прозорий canvas
     sceneEl.addEventListener('renderstart', () => {
       loadingEl.classList.add('hidden');
       startOverlay.classList.remove('hidden');
@@ -311,23 +318,18 @@
       console.log('✅ Сцена готова');
     });
 
-    // ============================================================
-    // СТАРТ: один клік = камера + звук
-    // ============================================================
     startBtn.addEventListener('click', async () => {
       startOverlay.classList.add('hidden');
 
       try {
-        // 1. Розблоковуємо відео зі звуком (у межах user gesture)
         const videoComponent = videoPlane.components['ar-video-texture'];
         if (videoComponent) {
           videoComponent.unmute();
           await videoComponent.play();
-          videoComponent.pause(); // пауза — гратимемо при знайденні таргету
+          videoComponent.pause();
           console.log('✅ Відео розблоковано зі звуком');
         }
 
-        // 2. Запускаємо MindAR-камеру
         const arSystem = sceneEl.systems['mindar-image-system'];
         if (arSystem) {
           await arSystem.start();
@@ -339,9 +341,6 @@
       }
     });
 
-    // ============================================================
-    // ТРЕКІНГ
-    // ============================================================
     const targetEl = document.querySelector('[mindar-image-target]');
 
     targetEl.addEventListener('targetFound', async () => {
