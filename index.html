@@ -68,35 +68,32 @@
     </div>
 
     <!-- Мітка версії -->
-    <div id="time-badge">05:58 | Test #11</div>
+    <div id="time-badge">06:32 | Test #12</div>
 
-    <!-- AR-сцена із суперстабільним трекінгом без дрижання -->
-    <a-scene mindar-image="imageTargetSrc: targets.mind; filterMinCF: 0.0005; filterBeta: 1000; warmupTolerance: 8; missTolerance: 15;" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
+    <!-- 
+      ОПТИМІЗОВАНА AR-сцена для слабких пристроїв:
+      - antialias: false (вимкнення важкого згладжування для високого FPS)
+      - precision: mediump (зниження точності рендерингу для розвантаження GPU)
+      - фільтри стабілізації проти мікро-дрижання
+    -->
+    <a-scene mindar-image="imageTargetSrc: targets.mind; filterMinCF: 0.0001; filterBeta: 500; warmupTolerance: 10; missTolerance: 20;" color-space="sRGB" renderer="colorManagement: true; antialias: false; precision: mediump; physicallyCorrectLights: false;" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
       
       <a-assets>
-        <!-- Відео без атрибута loop для точного контролю циклу через JS -->
-        <video id="my-video" src="https://files.catbox.moe/y5fotd.mp4" preload="auto" response-type="arraybuffer" crossorigin="anonymous" webkit-playsinline playsinline></video>
+        <!-- Нативний зациклений атрибут loop для максимальної продуктивності без зайвих JS-таймаутів -->
+        <video id="my-video" src="https://files.catbox.moe/y5fotd.mp4" preload="auto" response-type="arraybuffer" crossorigin="anonymous" webkit-playsinline playsinline loop></video>
       </a-assets>
 
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
       <!-- Сутність AR, яка прив'язується до знайденого маркера -->
       <a-entity mindar-image-target="targetIndex: 0">
-        <!-- 
-          Відеоплощина з окремими тригерами для появи та для циклічних затухань:
-          - showVideo / hideVideo: стандартне з'явлення/зникнення при знаходженні або втраті маркера.
-          - videoEnd: плавне затухання в кінці кожного кола відео.
-          - videoRestart: плавне витухання на початку нового кола відео.
-        -->
+        <!-- Легка площина лише з базовим плавним витуханням і затуханням -->
         <a-plane id="video-plane" src="#my-video" position="0 0 0" height="1.33" width="0.75" 
                  rotation="0 0 0" scale="1 1 1"
                  material="shader: flat; transparent: true; opacity: 0;"
                  
-                 animation__fadein="property: material.opacity; to: 1; dur: 800; easing: easeOutCubic; startEvents: showVideo"
-                 animation__fadeout="property: material.opacity; to: 0; dur: 500; easing: easeInCubic; startEvents: hideVideo"
-                 
-                 animation__loopout="property: material.opacity; to: 0; dur: 400; easing: easeInCubic; startEvents: videoEnd"
-                 animation__loopin="property: material.opacity; to: 1; dur: 400; easing: easeOutCubic; startEvents: videoRestart">
+                 animation__fadein="property: material.opacity; to: 1; dur: 500; easing: easeOutCubic; startEvents: showVideo"
+                 animation__fadeout="property: material.opacity; to: 0; dur: 400; easing: easeInCubic; startEvents: hideVideo">
         </a-plane>
       </a-entity>
       
@@ -126,19 +123,6 @@
         }).catch(err => console.log("Audio unlock error:", err));
       });
 
-      // Контроль циклу відео: при закінченні — затухання, переміщення на початок і витухання
-      videoElement.addEventListener("ended", () => {
-        if (targetEntity.object3D.visible) {
-          videoPlane.emit("videoEnd"); // Запуск затухання в кінці відео
-          
-          setTimeout(() => {
-            videoElement.currentTime = 0;
-            videoElement.play();
-            videoPlane.emit("videoRestart"); // Запуск витухання на новому колі
-          }, 400); // Час збігається з тривалістю animation__loopout
-        }
-      });
-
       // Подія: знайдено маркер
       targetEntity.addEventListener("targetFound", event => {
         if (!isUnlocked) return;
@@ -157,7 +141,7 @@
         
         fadeOutTimeout = setTimeout(() => {
           videoElement.pause();
-        }, 500);
+        }, 400);
       });
     </script>
   </body>
