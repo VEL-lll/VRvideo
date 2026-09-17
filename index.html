@@ -10,17 +10,17 @@
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
     
     <style>
-      /* Стилі для відображення поточного часу у нижньому правому кутку екрана */
+      /* Стилі для відображення статичного часу-версії у нижньому правому кутку екрана */
       #time-badge {
         position: fixed;       /* Фіксоване положення поверх усього екрана */
         bottom: 8px;           /* Відступ 8 пікселів від нижнього краю */
         right: 12px;           /* Відступ 12 пікселів від правого краю */
         z-index: 9999;         /* Максимальний шар priority, щоб текст був поверх AR-сцени */
         color: rgba(255, 255, 255, 0.7); /* Напівпрозорий білий колір тексту */
-        font-family: monospace;/* Використання моноширинного шрифту для рівних цифр */
+        font-family: monospace;/* Моноширинний шрифт для чіткого вигляду */
         font-size: 11px;       /* Невеликий мінімалістичний розмір шрифту */
-        pointer-events: none;  /* Клік проходить крізь текст, не блокуючи взаємодію з камерою */
-        letter-spacing: 0.5px; /* Легке розрідження між символами для краси */
+        pointer-events: none;  /* Клік проходит крізь текст, не блокуючи взаємодію з камерою */
+        letter-spacing: 0.5px; /* Легке розрідження між символами */
         text-shadow: 0 1px 2px rgba(0,0,0,0.5); /* Легка тінь для читабельності на світлому фоні */
       }
     </style>
@@ -29,16 +29,16 @@
   <!-- Заборона прокрутки сторінки (overflow: hidden) і нульові відступи для повноцінного AR-режиму -->
   <body style="margin: 0; overflow: hidden;">
     
-    <!-- Елемент (див), де виводитиметься поточний час -->
-    <div id="time-badge">--:--</div>
+    <!-- Елемент із статичним часом (використовується як версія релізу: тільки години і хвилини) -->
+    <div id="time-badge">05:00</div>
 
     <!-- Головний контейнер AR-сцени MindAR (вказується файл з маркерами targets.mind) -->
     <a-scene mindar-image="imageTargetSrc: targets.mind;" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
       
-      <!-- Контейнер для завантаження медіаресурсів (у нашому випадку — відео) -->
+      <!-- Контейнер для завантаження медіаресурсів (відео) -->
       <a-assets>
         <!-- Підключення відеофайлу з Catbox із атрибутами для плавної мобільної оптимізації -->
-        <video id="my-video" src="https://files.catbox.moe/ytgsmo.mp4" preload="auto" response-type="arraybuffer" crossorigin="anonymous" webkit-playsinline playsinline></video>
+        <video id="my-video" src="https://files.catbox.moe/y5fotd.mp4" preload="auto" response-type="arraybuffer" crossorigin="anonymous" webkit-playsinline playsinline></video>
       </a-assets>
 
       <!-- Віртуальна камера спостерігача (початкова позиція за замовчуванням) -->
@@ -53,21 +53,9 @@
     </a-scene>
 
     <script>
-      // Отримання посилань на відеоелемент, цільовий маркер AR та блок годинника з DOM-дерева
+      // Отримання посилань на відеоелемент та цільовий маркер AR з DOM-дерева
       const videoElement = document.querySelector("#my-video");
       const targetEntity = document.querySelector('[mindar-image-target]');
-      const timeBadge = document.querySelector("#time-badge");
-
-      // Функція для оновлення поточного часу (тільки години та хвилини без дати)
-      function updateTime() {
-        const now = new Date();                                     // Отримання поточної системної дати та часу
-        const hours = String(now.getHours()).padStart(2, '0');      // Форматування годин (завжди 2 цифри, наприклад "09")
-        const minutes = String(now.getMinutes()).padStart(2, '0');  // Форматування хвилин (завжди 2 цифри, наприклад "05")
-        timeBadge.textContent = `${hours}:${minutes}`;              // Запис часу у форматі "ГГ:ХХ" у наш блок на екрані
-      }
-
-      updateTime();               // Миттєвий виклик функції при завантаженні сторінки
-      setInterval(updateTime, 1000); // Оновлення годинника щосекунди
 
       // Подія: коли камера бачить маркер — відео починає відтворюватися
       targetEntity.addEventListener("targetFound", event => {
