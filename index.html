@@ -1,8 +1,6 @@
 <html>
   <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>WebAR Distance Volume Stable</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
     
@@ -10,7 +8,7 @@
       #start-overlay {
         position: fixed;
         inset: 0;
-        background: rgba(15, 15, 20, 0.95);
+        background: rgba(15, 15, 20, 0.85);
         z-index: 10000;
         display: flex;
         align-items: center;
@@ -22,20 +20,20 @@
         transition: opacity 0.4s ease;
       }
       #start-btn {
-        background: linear-gradient(135deg, #00c6ff, #0072ff);
+        background: linear-gradient(135deg, #ff416c, #ff4b2b);
         color: white;
         border: none;
-        padding: 16px 36px;
+        padding: 16px 32px;
         font-size: 16px;
         font-weight: bold;
         border-radius: 30px;
-        box-shadow: 0 8px 25px rgba(0, 114, 255, 0.4);
+        box-shadow: 0 6px 20px rgba(255, 65, 108, 0.4);
         cursor: pointer;
       }
       #start-hint {
-        margin-top: 14px;
+        margin-top: 12px;
         font-size: 13px;
-        opacity: 0.75;
+        opacity: 0.7;
       }
 
       /* Підказка для сканування */
@@ -45,22 +43,44 @@
         left: 50%;
         transform: translateX(-50%);
         z-index: 9998;
-        background: rgba(0, 0, 0, 0.8);
+        background: rgba(0, 0, 0, 0.7);
         color: white;
-        padding: 10px 22px;
+        padding: 10px 20px;
         border-radius: 20px;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         font-size: 14px;
         font-weight: 500;
         pointer-events: none;
-        transition: opacity 0.4s ease;
+        transition: opacity 0.4s ease, transform 0.4s ease;
         opacity: 0;
-        letter-spacing: 0.3px;
-        backdrop-filter: blur(6px);
-        border: 1px solid rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(4px);
+        border: 1px solid rgba(255,255,255,0.15);
       }
       #scan-instruction.visible {
         opacity: 1;
+      }
+
+      /* Індикатор стану дій (Пауза/Зум/Слоу-мо) */
+      #action-status {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 9999;
+        background: rgba(0, 0, 0, 0.75);
+        color: white;
+        padding: 15px 30px;
+        border-radius: 15px;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        font-size: 20px;
+        font-weight: bold;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+        backdrop-filter: blur(5px);
+        display: flex;
+        align-items: center;
+        gap: 10px;
       }
 
       /* Кнопка керування звуком */
@@ -83,9 +103,6 @@
         backdrop-filter: blur(4px);
         transition: background 0.2s;
       }
-      #sound-toggle:active {
-        background: rgba(255, 255, 255, 0.3);
-      }
 
       #time-badge {
         position: fixed;
@@ -97,42 +114,36 @@
         font-size: 14px;
         font-weight: bold;
         pointer-events: none;
-        letter-spacing: 0.5px;
-        text-shadow: 0 1px 4px rgba(0,0,0,0.8);
       }
     </style>
   </head>
   
-  <body style="margin: 0; overflow: hidden;">
+  <body style="margin: 0; overflow: hidden; touch-action: none;">
     
     <div id="start-overlay">
-      <button id="start-btn">▶ Запустити AR</button>
-      <div id="start-hint">(натисніть для активації камери та звуку)</div>
+      <button id="start-btn">Торкніться для запуску AR</button>
+      <div id="start-hint">(потрібно для увімкнення звуку та камери)</div>
     </div>
 
     <div id="scan-instruction">📍 Наведіть камеру на зображення</div>
+    <div id="action-status"></div>
     <div id="sound-toggle">🔇</div>
-    <div id="time-badge">08:00 | Smart Volume</div>
+    <div id="time-badge">08:00 | Test #21</div>
 
-    <!-- Фільтри проти тремтіння (jitter) -->
-    <a-scene mindar-image="imageTargetSrc: targets.mind; filterMinCF: 0.001; filterBeta: 10; warmupTolerance: 5; missTolerance: 10;" 
-             color-space="sRGB" 
-             renderer="colorManagement: true; antialias: false; precision: mediump;" 
-             vr-mode-ui="enabled: false" 
-             device-orientation-permission-ui="enabled: false">
+    <a-scene mindar-image="imageTargetSrc: targets.mind; filterMinCF: 0.01; filterBeta: 2000; warmupTolerance: 3; missTolerance: 5;" color-space="sRGB" renderer="colorManagement: true; antialias: false; precision: mediump; physicallyCorrectLights: false;" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
       
       <a-assets>
-        <video id="my-video" src="https://files.catbox.moe/y5fotd.mp4" preload="auto" crossorigin="anonymous" webkit-playsinline playsinline loop muted></video>
+        <video id="my-video" src="https://files.catbox.moe/y5fotd.mp4" preload="auto" response-type="arraybuffer" crossorigin="anonymous" webkit-playsinline playsinline loop muted></video>
       </a-assets>
 
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-      <a-entity mindar-image-target="targetIndex: 0" id="ar-target">
+      <a-entity mindar-image-target="targetIndex: 0">
         <a-plane id="video-plane" src="#my-video" position="0 0 0" height="1.33" width="0.75" 
                  rotation="0 0 0" scale="1 1 1"
                  material="shader: flat; transparent: true; opacity: 0;"
-                 animation__fadein="property: material.opacity; to: 1; dur: 800; easing: easeInOutCubic; startEvents: showVideo"
-                 animation__fadeout="property: material.opacity; to: 0; dur: 500; easing: easeInOutCubic; startEvents: hideVideo">
+                 animation__fadein="property: material.opacity; to: 1; dur: 1200; easing: easeInOutCubic; startEvents: showVideo"
+                 animation__fadeout="property: material.opacity; to: 0; dur: 800; easing: easeInOutCubic; startEvents: hideVideo">
         </a-plane>
       </a-entity>
       
@@ -141,100 +152,48 @@
     <script>
       const overlay = document.querySelector("#start-overlay");
       const videoElement = document.querySelector("#my-video");
-      const targetEntity = document.querySelector('#ar-target');
+      const targetEntity = document.querySelector('[mindar-image-target]');
       const videoPlane = document.querySelector("#video-plane");
       const scanInstruction = document.querySelector("#scan-instruction");
       const soundToggle = document.querySelector("#sound-toggle");
+      const actionStatus = document.querySelector("#action-status");
 
       let fadeOutTimeout = null;
       let isUnlocked = false;
-      let isUserMuted = false;
+      let isTargetFound = false;
+      let statusTimeout = null;
 
+      // Функція для показу візуального статусу
+      function showStatus(text, duration = 1200) {
+        actionStatus.textContent = text;
+        actionStatus.style.opacity = "1";
+        if (statusTimeout) clearTimeout(statusTimeout);
+        if (duration > 0) {
+          statusTimeout = setTimeout(() => {
+            actionStatus.style.opacity = "0";
+          }, duration);
+        }
+      }
+
+      // Змінні для жестів
       let initialDistance = 0;
+      let initialAngle = 0;
       let baseScale = 1;
       let currentScale = 1;
+      let baseRotation = 0;
+      let currentRotation = 0;
+      
+      let touchStartTime = 0;
+      let holdTimeout = null;
+      let isHolding = false;
+      let isTwoFingerGesture = false;
 
-      // Web Audio API змінні для об'ємного звуку та динамічної гучності за дистанцією
-      let audioCtx = null;
-      let pannerNode = null;
-      let gainNode = null;
-      let sourceNode = null;
-      let targetWorldPos = new THREE.Vector3();
-      let camPos = new THREE.Vector3();
-      const cameraObj = document.querySelector('a-camera').object3D;
-
-      function initSpatialAudio() {
-        if (audioCtx) return;
-        try {
-          const AudioContext = window.AudioContext || window.webkitAudioContext;
-          audioCtx = new AudioContext();
-          
-          sourceNode = audioCtx.createMediaElementSource(videoElement);
-          pannerNode = audioCtx.createPanner();
-          gainNode = audioCtx.createGain(); // Вузол для керування гучністю залежно від дистанції
-          
-          // Налаштування 3D панорамування без автоматичного затухання
-          pannerNode.panningModel = 'HRTF';
-          pannerNode.distanceModel = 'linear';
-          pannerNode.refDistance = 1;
-          pannerNode.maxDistance = 10000;
-          pannerNode.rolloffFactor = 0; 
-
-          // Ланцюжок: джерело -> панорамування (об'єм) -> регулятор гучності -> динаміки
-          sourceNode.connect(pannerNode);
-          pannerNode.connect(gainNode);
-          gainNode.connect(audioCtx.destination);
-        } catch (e) {
-          console.log("Spatial audio init warning:", e);
-        }
-      }
-
-      // Головний цикл розрахунку позиції об'єкта і відстані до камери
-      function updateAudioParameters() {
-        if (pannerNode && gainNode && targetEntity) {
-          targetEntity.object3D.getWorldPosition(targetWorldPos);
-          cameraObj.getWorldPosition(camPos);
-
-          // 1. Оновлюємо 3D координати для об'ємного звуку (зліва/справа)
-          pannerNode.positionX.value = targetWorldPos.x;
-          pannerNode.positionY.value = targetWorldPos.y;
-          pannerNode.positionZ.value = targetWorldPos.z;
-
-          // 2. Рахуємо реальну відстань від камери до цілі
-          const distance = camPos.distanceTo(targetWorldPos);
-
-          // 3. Логіка гучності за відстанню:
-          // До ~1.2 метра (нормальна або близька відстань) — максимум (1.0)
-          // Якщо відходимо далі (наприклад, до 4-5 метрів) — плавно знижуємо до мінімуму 0.6
-          let targetGain = 1.0;
-          if (distance > 1.2) {
-            let factor = (distance - 1.2) / (4.0 - 1.2);
-            factor = Math.max(0, Math.min(1, factor)); // Обмежуємо від 0 до 1
-            targetGain = 1.0 - factor * (1.0 - 0.6);   // Плавне зниження до 0.6
-          }
-
-          // Застосовуємо гучність (якщо користувач не вимкнув звук кнопкою)
-          if (!isUserMuted) {
-            gainNode.gain.value = targetGain;
-          } else {
-            gainNode.gain.value = 0;
-          }
-        }
-        requestAnimationFrame(updateAudioParameters);
-      }
-
-      // Клік по стартовому екрану — розблокування
+      // Розблокування відео
       overlay.addEventListener("click", () => {
         isUnlocked = true;
-        videoElement.muted = true; // Запускаємо беззвучно для розблокування мобільним браузером
-
-        initSpatialAudio();
-        requestAnimationFrame(updateAudioParameters);
-
+        videoElement.muted = false;
         overlay.style.opacity = "0";
-        setTimeout(() => {
-          overlay.style.display = "none";
-        }, 400);
+        setTimeout(() => overlay.style.display = "none", 400);
 
         scanInstruction.classList.add("visible");
         soundToggle.style.display = "flex";
@@ -243,69 +202,131 @@
         videoElement.play().then(() => {
           videoElement.pause();
           videoElement.currentTime = 0;
-        }).catch(err => console.log("Unlock error:", err));
+        }).catch(err => console.log("Audio unlock error:", err));
       });
 
-      // Кнопка звуку
-      soundToggle.addEventListener("click", () => {
-        isUserMuted = !isUserMuted;
-        soundToggle.textContent = isUserMuted ? "🔇" : "🔊";
-        if (gainNode) {
-          gainNode.gain.value = isUserMuted ? 0 : 1.0;
-        }
+      // Перемикач звуку
+      soundToggle.addEventListener("click", (e) => {
+        e.stopPropagation(); // щоб не спрацював тап-пауза
+        videoElement.muted = !videoElement.muted;
+        soundToggle.textContent = videoElement.muted ? "🔇" : "🔊";
       });
 
-      // Знайшли мітку — запускаємо відео
+      // Логіка маркерів
       targetEntity.addEventListener("targetFound", () => {
         if (!isUnlocked) return;
+        isTargetFound = true;
         if (fadeOutTimeout) clearTimeout(fadeOutTimeout);
-        
         scanInstruction.classList.remove("visible");
-        
-        if (audioCtx && audioCtx.state === 'suspended') {
-          audioCtx.resume();
-        }
-
-        videoElement.muted = true; // Звук контролюється через gainNode
-        const playPromise = videoElement.play();
-        if (playPromise !== undefined) {
-          playPromise.catch(err => console.log("Play error:", err));
-        }
+        videoElement.play();
         videoPlane.emit("showVideo");
       });
       
-      // Втратили мітку — пауза
       targetEntity.addEventListener("targetLost", () => {
         if (!isUnlocked) return;
-        
+        isTargetFound = false;
         scanInstruction.classList.add("visible");
         videoPlane.emit("hideVideo");
-        
-        fadeOutTimeout = setTimeout(() => {
-          videoElement.pause();
-        }, 500);
+        fadeOutTimeout = setTimeout(() => videoElement.pause(), 800);
       });
 
-      // Зум двома пальцями
+      // === КОМПЛЕКСНА СИСТЕМА ЖЕСТІВ ===
+
       window.addEventListener('touchstart', (e) => {
-        if (e.touches.length === 2) {
-          initialDistance = Math.hypot(
-            e.touches[0].clientX - e.touches[1].clientX,
-            e.touches[0].clientY - e.touches[1].clientY
-          );
+        if (!isTargetFound || e.target.id === 'sound-toggle') return;
+
+        if (e.touches.length === 1) {
+          // Логіка для 1 пальця (Тап / Слоу-мо)
+          isTwoFingerGesture = false;
+          touchStartTime = Date.now();
+          
+          holdTimeout = setTimeout(() => {
+            if (!isTwoFingerGesture) {
+              videoElement.playbackRate = 0.5;
+              isHolding = true;
+              showStatus("🐌 0.5x Slow-mo", 0); // Тримаємо напис, поки палець на екрані
+            }
+          }, 300); // Час для активації слоу-мо
+
+        } else if (e.touches.length === 2) {
+          // Логіка для 2 пальців (Зум / Обертання)
+          isTwoFingerGesture = true;
+          clearTimeout(holdTimeout); // Відміняємо слоу-мо
+          if (isHolding) {
+            videoElement.playbackRate = 1.0;
+            isHolding = false;
+            actionStatus.style.opacity = "0";
+          }
+
+          const dx = e.touches[0].clientX - e.touches[1].clientX;
+          const dy = e.touches[0].clientY - e.touches[1].clientY;
+          
+          initialDistance = Math.hypot(dx, dy);
+          initialAngle = Math.atan2(dy, dx) * (180 / Math.PI);
+          
           baseScale = currentScale;
+          baseRotation = currentRotation;
         }
-      });
+      }, { passive: false });
 
       window.addEventListener('touchmove', (e) => {
-        if (e.touches.length === 2 && initialDistance > 0) {
-          const dist = Math.hypot(
-            e.touches[0].clientX - e.touches[1].clientX,
-            e.touches[0].clientY - e.touches[1].clientY
-          );
+        if (!isTargetFound) return;
+        
+        if (e.touches.length === 2 && isTwoFingerGesture) {
+          e.preventDefault(); // Блокуємо скрол екрана
+          
+          const dx = e.touches[0].clientX - e.touches[1].clientX;
+          const dy = e.touches[0].clientY - e.touches[1].clientY;
+          
+          // Обчислення Зуму
+          const dist = Math.hypot(dx, dy);
           let factor = dist / initialDistance;
-          currentScale = Math.max(0.4, Math.min(3.0, baseScale * factor));
+          currentScale = Math.max(0.4, Math.min(3.5, baseScale * factor));
+          
+          // Обчислення Обертання (Z-axis)
+          const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+          const deltaAngle = angle - initialAngle;
+          currentRotation = baseRotation + deltaAngle;
+          
+          // Застосовуємо до площини
           videoPlane.setAttribute('scale', `${currentScale} ${currentScale} ${currentScale}`);
+          videoPlane.setAttribute('rotation', `0 0 ${currentRotation}`);
+        } else if (e.touches.length === 1) {
+          // Якщо палець сильно зсунувся, скасовуємо тап/слоу-мо
+          clearTimeout(holdTimeout);
+        }
+      }, { passive: false });
+
+      window.addEventListener('touchend', (e) => {
+        if (!isTargetFound) return;
+
+        // Обробка підняття 1 пальця
+        if (!isTwoFingerGesture && e.changedTouches.length === 1) {
+          clearTimeout(holdTimeout);
+          
+          if (isHolding) {
+            // Відпустили Слоу-мо
+            videoElement.playbackRate = 1.0;
+            isHolding = false;
+            showStatus("▶️ 1.0x Норма");
+          } else {
+            // Швидкий тап (Пауза / Плей)
+            const touchDuration = Date.now() - touchStartTime;
+            if (touchDuration < 300) {
+              if (videoElement.paused) {
+                videoElement.play();
+                showStatus("▶️ Відтворення");
+              } else {
+                videoElement.pause();
+                showStatus("⏸ Пауза");
+              }
+            }
+          }
+        }
+
+        // Скидаємо прапорець жестів, коли всі пальці піднято
+        if (e.touches.length === 0) {
+          isTwoFingerGesture = false;
         }
       });
     </script>
