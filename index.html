@@ -39,6 +39,154 @@
       z-index: 0 !important;
       background: #000;
     }
+
+    /* === СКАН-ЕФЕКТ (покращений) === */
+    #scan-overlay {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 5000;
+      opacity: 0;
+      transition: opacity 0.6s ease;
+    }
+    #scan-overlay.show { opacity: 1; }
+
+    /* Рамка */
+    #scan-frame {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 68vmin; height: 68vmin;
+      animation: framePulse 3s ease-in-out infinite;
+    }
+    #scan-frame::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border: 2px solid rgba(108, 99, 255, 0.55);
+      border-radius: 24px;
+      box-shadow:
+        0 0 40px rgba(108, 99, 255, 0.6),
+        0 0 80px rgba(168, 85, 247, 0.3),
+        inset 0 0 40px rgba(108, 99, 255, 0.15);
+    }
+
+    /* 4 кути */
+    .corner {
+      position: absolute;
+      width: 42px; height: 42px;
+      border: 3px solid #6c63ff;
+      filter: drop-shadow(0 0 10px #6c63ff);
+    }
+    .corner.tl { top: -3px; left: -3px; border-right: none; border-bottom: none; border-top-left-radius: 20px; }
+    .corner.tr { top: -3px; right: -3px; border-left: none; border-bottom: none; border-top-right-radius: 20px; }
+    .corner.bl { bottom: -3px; left: -3px; border-right: none; border-top: none; border-bottom-left-radius: 20px; }
+    .corner.br { bottom: -3px; right: -3px; border-left: none; border-top: none; border-bottom-right-radius: 20px; }
+
+    /* Лазерна лінія */
+    #scan-line {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translateX(-50%);
+      width: 62vmin;
+      height: 3px;
+      background: linear-gradient(90deg,
+        transparent 0%,
+        rgba(108, 99, 255, 0.6) 20%,
+        #a855f7 50%,
+        rgba(108, 99, 255, 0.6) 80%,
+        transparent 100%);
+      box-shadow:
+        0 0 20px #6c63ff,
+        0 0 40px #a855f7,
+        0 0 60px rgba(168, 85, 247, 0.5);
+      border-radius: 3px;
+      animation: scanMove 4s ease-in-out infinite;
+    }
+    #scan-line::before {
+      content: '';
+      position: absolute;
+      inset: -20px 0;
+      background: linear-gradient(180deg,
+        transparent 0%,
+        rgba(108, 99, 255, 0.18) 50%,
+        transparent 100%);
+      filter: blur(10px);
+    }
+
+    @keyframes framePulse {
+      0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.75; }
+      50%      { transform: translate(-50%, -50%) scale(1.035); opacity: 1; }
+    }
+    @keyframes scanMove {
+      0%   { top: 18%; opacity: 0; }
+      8%   { opacity: 1; }
+      50%  { top: 50%; opacity: 1; }
+      92%  { opacity: 1; }
+      100% { top: 82%; opacity: 0; }
+    }
+
+    /* Підказка */
+    #scan-hint {
+      position: fixed;
+      bottom: calc(100px + env(safe-area-inset-bottom));
+      left: 50%; transform: translateX(-50%);
+      color: rgba(255,255,255,0.9);
+      font-size: 14px;
+      z-index: 5001;
+      background: rgba(0,0,0,0.55);
+      padding: 10px 22px;
+      border-radius: 20px;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      transition: opacity 0.4s ease;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+    #scan-hint.hidden { opacity: 0; }
+
+    /* === HUD-КНОПКИ === */
+    #hud {
+      position: fixed;
+      bottom: calc(20px + env(safe-area-inset-bottom));
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      display: flex;
+      gap: 12px;
+      z-index: 10002;
+      opacity: 0;
+      transition: opacity 0.4s ease, transform 0.4s ease;
+      pointer-events: none;
+    }
+    #hud.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+      pointer-events: auto;
+    }
+    .hud-btn {
+      width: 56px; height: 56px;
+      border: none;
+      border-radius: 50%;
+      background: rgba(20, 20, 30, 0.75);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      color: #fff;
+      font-size: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.35);
+      transition: transform 0.15s ease, background 0.2s ease;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .hud-btn:active {
+      transform: scale(0.9);
+      background: rgba(108, 99, 255, 0.85);
+    }
+    .hud-btn svg { width: 24px; height: 24px; fill: #fff; }
+
     #build-time {
       position: fixed;
       right: calc(8px + env(safe-area-inset-right));
@@ -51,6 +199,7 @@
       user-select: none;
       text-shadow: 0 1px 2px rgba(0,0,0,0.7);
     }
+
     #loading {
       position: fixed; inset: 0;
       background: #0a0a0a;
@@ -70,6 +219,7 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
     #loading p { font-size: 14px; opacity: 0.7; }
+
     #start-overlay {
       position: fixed; inset: 0;
       background: radial-gradient(circle at 50% 60%, #1a1a2e 0%, #0a0a0a 100%);
@@ -99,9 +249,10 @@
     #start-overlay .hint {
       margin-top: 22px; color: rgba(255,255,255,0.35); font-size: 12px;
     }
+
     #error-msg {
       position: fixed;
-      bottom: calc(30px + env(safe-area-inset-bottom));
+      bottom: calc(100px + env(safe-area-inset-bottom));
       left: 50%; transform: translateX(-50%);
       background: rgba(220,38,38,0.95); color: #fff;
       padding: 12px 22px; border-radius: 12px;
@@ -109,6 +260,7 @@
       display: none; max-width: 85%; text-align: center;
     }
     #error-msg.show { display: block; }
+
     #zoom-indicator {
       position: fixed;
       top: calc(20px + env(safe-area-inset-top));
@@ -137,9 +289,30 @@
     <div class="hint">Потрібен доступ до камери</div>
   </div>
 
+  <!-- Скан-ефект -->
+  <div id="scan-overlay">
+    <div id="scan-frame">
+      <div class="corner tl"></div>
+      <div class="corner tr"></div>
+      <div class="corner bl"></div>
+      <div class="corner br"></div>
+    </div>
+    <div id="scan-line"></div>
+  </div>
+  <div id="scan-hint">Наведіть камеру на фотографію</div>
+
   <div id="error-msg"></div>
   <div id="build-time">оновлено: —</div>
   <div id="zoom-indicator">1.00×</div>
+
+  <div id="hud">
+    <button class="hud-btn" id="btn-play" title="Play/Pause">
+      <svg id="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+    </button>
+    <button class="hud-btn" id="btn-reset-zoom" title="Скинути масштаб">
+      <svg viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
+    </button>
+  </div>
 
   <a-scene
     mindar-image="imageTargetSrc: ./targets.mind;
@@ -152,7 +325,7 @@
     vr-mode-ui="enabled: false"
     device-orientation-permission-ui="enabled: false"
     color-space="sRGB"
-    renderer="alpha: true; colorManagement: false; antialias: false; sortObjects: false; physicallyCorrectLights: false; logarithmicDepthBuffer: false;"
+    renderer="alpha: true; antialias: false; sortObjects: false; physicallyCorrectLights: false; logarithmicDepthBuffer: false;"
     embedded
   >
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
@@ -171,7 +344,6 @@
   </a-scene>
 
   <script>
-    // Час оновлення
     (function () {
       const d = new Date();
       const p = (n) => String(n).padStart(2, '0');
@@ -180,7 +352,7 @@
     })();
 
     // ============================================================
-    // ar-video-texture — площина 1×1, scale-анімації, цикл
+    // ar-video-texture — з коректним покриттям та кольором
     // ============================================================
     AFRAME.registerComponent('ar-video-texture', {
       schema: { src: { type: 'string' } },
@@ -190,6 +362,7 @@
         this.scaleValue = 1;
         this.zoomFactor = 1;
         this.animating = false;
+        this.userPaused = false;
 
         const video = document.createElement('video');
         video.setAttribute('src', this.data.src);
@@ -211,8 +384,35 @@
           texture.minFilter = THREE.LinearFilter;
           texture.magFilter = THREE.LinearFilter;
           texture.format = THREE.RGBAFormat;
-          texture.colorSpace = THREE.SRGBColorSpace;
           texture.generateMipmaps = false;
+
+          // НЕ використовуємо SRGBColorSpace — щоб не затемнювати
+
+          // "object-fit: cover" — обрізаємо відео під квадрат 1×1
+          const updateCover = () => {
+            const vw = video.videoWidth;
+            const vh = video.videoHeight;
+            if (!vw || !vh) return;
+            const videoAspect = vw / vh;
+            const planeAspect = 1; // площина 1×1
+
+            if (videoAspect > planeAspect) {
+              // відео ширше — обрізаємо по боках
+              const visibleW = planeAspect / videoAspect;
+              texture.repeat.set(visibleW, 1);
+              texture.offset.set((1 - visibleW) / 2, 0);
+            } else {
+              // відео вище — обрізаємо зверху/знизу
+              const visibleH = videoAspect / planeAspect;
+              texture.repeat.set(1, visibleH);
+              texture.offset.set(0, (1 - visibleH) / 2);
+            }
+            texture.needsUpdate = true;
+            console.log(`✅ Cover: videoAspect=${videoAspect.toFixed(3)}`);
+          };
+
+          video.addEventListener('loadedmetadata', updateCover);
+          if (video.videoWidth) updateCover();
 
           mesh.material = new THREE.MeshBasicMaterial({
             map: texture,
@@ -227,8 +427,8 @@
           this.setScale(0.01);
         });
 
-        // ЦИКЛ: ended → scale-out → reset → scale-in
         video.addEventListener('ended', () => {
+          if (this.userPaused) return;
           this.animateScale(this.scaleValue, 0.01, 350, () => {
             video.currentTime = 0;
             video.play().catch(()=>{});
@@ -262,6 +462,7 @@
 
       play: function () {
         if (!this.video) return;
+        this.userPaused = false;
         this.video.play().then(() => {
           this.animateScale(0.01, 1, 500);
         }).catch(e => console.warn('play() blocked:', e));
@@ -270,6 +471,17 @@
       pause: function () {
         if (this.video) this.video.pause();
         this.animateScale(this.scaleValue, 0.01, 300);
+      },
+
+      togglePlay: function () {
+        if (this.video.paused) {
+          this.userPaused = false;
+          this.video.play().then(() => this.animateScale(0.01, 1, 500)).catch(()=>{});
+        } else {
+          this.userPaused = true;
+          this.video.pause();
+          this.animateScale(this.scaleValue, 0.01, 300);
+        }
       },
 
       unmute: function () {
@@ -282,6 +494,8 @@
         this.zoomFactor = factor;
         this.setScale(this.scaleValue * this.zoomFactor);
       },
+
+      resetZoom: function () { this.setZoom(1.0); },
 
       tick: function () {
         if (this.video && !this.video.paused && this.texture) {
@@ -332,6 +546,15 @@
     const sceneEl = document.querySelector('a-scene');
     const videoPlane = document.getElementById('ar-video-plane');
     const zoomIndicator = document.getElementById('zoom-indicator');
+    const scanOverlay = document.getElementById('scan-overlay');
+    const scanHint = document.getElementById('scan-hint');
+    const hud = document.getElementById('hud');
+    const btnPlay = document.getElementById('btn-play');
+    const btnResetZoom = document.getElementById('btn-reset-zoom');
+    const iconPlay = document.getElementById('icon-play');
+
+    const ICON_PLAY = '<path d="M8 5v14l11-7z"/>';
+    const ICON_PAUSE = '<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>';
 
     sceneEl.addEventListener('renderstart', () => {
       loadingEl.classList.add('hidden');
@@ -376,9 +599,10 @@
       if (e.touches.length < 2) initialPinchDistance = 0;
     }, { passive: true });
 
-    // СТАРТ
     startBtn.addEventListener('click', async () => {
       startOverlay.classList.add('hidden');
+      scanOverlay.classList.add('show');
+      scanHint.classList.remove('hidden');
       try {
         const vc = videoPlane.components['ar-video-texture'];
         if (vc) {
@@ -391,10 +615,25 @@
       } catch (err) { console.error(err); }
     });
 
-    // ТРЕКІНГ
+    btnPlay.addEventListener('click', () => {
+      const vc = videoPlane.components['ar-video-texture'];
+      if (vc) vc.togglePlay();
+    });
+
+    btnResetZoom.addEventListener('click', () => {
+      zoomFactor = 1.0;
+      const vc = videoPlane.components['ar-video-texture'];
+      if (vc) vc.resetZoom();
+      showZoom();
+    });
+
     const targetEl = document.querySelector('[mindar-image-target]');
 
     targetEl.addEventListener('targetFound', async () => {
+      scanOverlay.classList.remove('show');
+      scanHint.classList.add('hidden');
+      hud.classList.add('show');
+
       const vc = videoPlane.components['ar-video-texture'];
       if (!vc) return;
       if (vc.isPaused()) {
@@ -403,13 +642,22 @@
       } else {
         vc.animateScale(0.01, 1, 500);
       }
-      showZoom();
+      iconPlay.innerHTML = ICON_PAUSE;
     });
 
     targetEl.addEventListener('targetLost', () => {
+      scanOverlay.classList.add('show');
+      scanHint.classList.remove('hidden');
+      hud.classList.remove('show');
       const vc = videoPlane.components['ar-video-texture'];
       if (vc) vc.pause();
     });
+
+    setInterval(() => {
+      const vc = videoPlane.components['ar-video-texture'];
+      if (!vc || !vc.video) return;
+      iconPlay.innerHTML = vc.video.paused ? ICON_PLAY : ICON_PAUSE;
+    }, 300);
 
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) {
