@@ -1,63 +1,67 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
-  <style>
-    #version-label {
-      position: fixed;
-      bottom: 5px;
-      right: 10px;
-      color: rgba(255, 255, 255, 0.7);
-      font-size: 10px;
-      font-family: monospace;
-      pointer-events: none;
-      z-index: 999;
-      letter-spacing: 0.5px;
+using UnityEngine;
+using UnityEngine.Video;
+
+[RequireComponent(typeof(VideoPlayer))]
+public class ARVideoPlayer : MonoBehaviour
+{
+    [Header("Налаштування відео")]
+    [Tooltip("Посилання на відео")]
+    public string videoUrl = "https://files.catbox.moe/gswdrf.mov";
+    public bool loopVideo = true;
+
+    private VideoPlayer videoPlayer;
+
+    void Awake()
+    {
+        videoPlayer = GetComponent<VideoPlayer>();
+        
+        // Базові налаштування
+        videoPlayer.source = VideoSource.Url;
+        videoPlayer.url = videoUrl;
+        videoPlayer.playOnAwake = false;
+        videoPlayer.isLooping = loopVideo;
+        
+        // Рендеринг на RenderTexture або Material (залежить від твоїх налаштувань)
+        // videoPlayer.renderMode = VideoRenderMode.MaterialOverride; 
+        
+        // Починаємо підготовку відео у фоні
+        videoPlayer.Prepare();
     }
-  </style>
-</head>
-<body style="margin: 0; overflow: hidden;">
 
-  <div id="version-label">04:37</div>
+    // Викликається системою AR (Vuforia / AR Foundation), коли маркер знайдено
+    public void OnTrackingFound()
+    {
+        Debug.Log("Маркер знайдено. Запуск відео...");
+        
+        if (videoPlayer.isPrepared)
+        {
+            videoPlayer.Play();
+        }
+        else
+        {
+            // Якщо відео ще не завантажилось з мережі, чекаємо і запускаємо одразу як буде готово
+            videoPlayer.prepareCompleted += PlayWhenPrepared;
+        }
+    }
 
-  <video id="my-video" src="https://files.catbox.moe/vyigmo.mp4" preload="auto" crossorigin="anonymous" webkit-playsinline playsinline muted loop></video>
+    // Викликається, коли маркер втрачено
+    public void OnTrackingLost()
+    {
+        Debug.Log("Маркер втрачено. Пауза відео...");
+        
+        // Відписуємось від події, щоб уникнути багів
+        videoPlayer.prepareCompleted -= PlayWhenPrepared; 
+        
+        if (videoPlayer.isPlaying)
+        {
+            videoPlayer.Pause(); 
+            // Якщо хочеш, щоб відео щоразу починалось з початку, заміни Pause() на Stop()
+        }
+    }
 
-  <!-- Додано параметри фільтрації (filterMinCF та filterBeta) для плавного трекінгу без дрижання -->
-  <a-scene mindar-image="imageTargetSrc: targets.mind; filterMinCF: 0.0001; filterBeta: 0.001; warmupTolerance: 5; missTolerance: 5;" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
-    <a-assets>
-      <item id="target-asset" src="targets.mind"></item>
-    </a-assets>
-
-    <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
-
-    <!-- Ціль розпізнавання зображення -->
-    <a-entity mindar-image-target="targetIndex: 0" id="mindar-image-target">
-      <a-plane src="#my-video" position="0 0 0" height="1.33" width="0.75" rotation="0 0 0"></a-plane>
-    </a-entity>
-  </a-scene>
-
-  <script>
-    const videoElement = document.querySelector('#my-video');
-    const targetEntity = document.querySelector('#mindar-image-target');
-
-    window.addEventListener('click', () => {
-      if (videoElement.paused) {
-        videoElement.play().catch(e => console.log("Play prevented:", e));
-        videoElement.pause();
-      }
-    }, { once: true });
-
-    targetEntity.addEventListener('targetFound', event => {
-      videoElement.play().catch(error => {
-        console.log("Error playing video:", error);
-      });
-    });
-
-    targetEntity.addEventListener('targetLost', event => {
-      videoElement.pause();
-    });
-  </script>
-</body>
-</html>
+    private void PlayWhenPrepared(VideoPlayer vp)
+    {
+        vp.Play();
+        vp.prepareCompleted -= PlayWhenPrepared;
+    }
+}
