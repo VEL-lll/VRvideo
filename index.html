@@ -1,6 +1,8 @@
 <html>
   <head>
+    <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Romantic WebAR Experience</title>
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
     
@@ -8,7 +10,7 @@
       #start-overlay {
         position: fixed;
         inset: 0;
-        background: rgba(15, 15, 20, 0.85);
+        background: rgba(15, 15, 20, 0.92);
         z-index: 10000;
         display: flex;
         align-items: center;
@@ -23,17 +25,17 @@
         background: linear-gradient(135deg, #ff416c, #ff4b2b);
         color: white;
         border: none;
-        padding: 16px 32px;
+        padding: 16px 36px;
         font-size: 16px;
         font-weight: bold;
         border-radius: 30px;
-        box-shadow: 0 6px 20px rgba(255, 65, 108, 0.4);
+        box-shadow: 0 8px 25px rgba(255, 65, 108, 0.5);
         cursor: pointer;
       }
       #start-hint {
-        margin-top: 12px;
+        margin-top: 14px;
         font-size: 13px;
-        opacity: 0.7;
+        opacity: 0.75;
       }
 
       /* Підказка для сканування */
@@ -43,9 +45,9 @@
         left: 50%;
         transform: translateX(-50%);
         z-index: 9998;
-        background: rgba(0, 0, 0, 0.7);
+        background: rgba(0, 0, 0, 0.75);
         color: white;
-        padding: 10px 20px;
+        padding: 10px 22px;
         border-radius: 20px;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         font-size: 14px;
@@ -54,8 +56,8 @@
         transition: opacity 0.4s ease, transform 0.4s ease;
         opacity: 0;
         letter-spacing: 0.3px;
-        backdrop-filter: blur(4px);
-        border: 1px solid rgba(255,255,255,0.15);
+        backdrop-filter: blur(6px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
       }
       #scan-instruction.visible {
         opacity: 1;
@@ -97,7 +99,7 @@
         font-weight: bold;
         pointer-events: none;
         letter-spacing: 0.5px;
-        text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+        text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
       }
     </style>
   </head>
@@ -105,31 +107,52 @@
   <body style="margin: 0; overflow: hidden;">
     
     <div id="start-overlay">
-      <button id="start-btn">Торкніться для запуску AR</button>
-      <div id="start-hint">(потрібно для увімкнення звуку та камери)</div>
+      <button id="start-btn">❤️ Запустити романтичне AR</button>
+      <div id="start-hint">(потрібно для об'ємного звуку та камери)</div>
     </div>
 
-    <div id="scan-instruction">📍 Наведіть камеру на зображення</div>
+    <div id="scan-instruction">📍 Наведіть камеру на фото/зображення</div>
     <div id="sound-toggle">🔇</div>
-    <div id="time-badge">07:24 | Test #20</div>
+    <div id="time-badge">07:32 | Romantic Pro</div>
 
-    <a-scene mindar-image="imageTargetSrc: targets.mind; filterMinCF: 0.01; filterBeta: 2000; warmupTolerance: 3; missTolerance: 5;" color-space="sRGB" renderer="colorManagement: true; antialias: false; precision: mediump; physicallyCorrectLights: false;" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
+    <a-scene mindar-image="imageTargetSrc: targets.mind; filterMinCF: 0.01; filterBeta: 2000; warmupTolerance: 3; missTolerance: 5;" 
+             color-space="sRGB" 
+             renderer="colorManagement: true; antialias: false; precision: mediump; physicallyCorrectLights: false;" 
+             vr-mode-ui="enabled: false" 
+             device-orientation-permission-ui="enabled: false">
       
       <a-assets>
-        <video id="my-video" src="https://files.catbox.moe/y5fotd.mp4" preload="auto" response-type="arraybuffer" crossorigin="anonymous" webkit-playsinline playsinline loop muted></video>
+        <video id="my-video" src="https://files.catbox.moe/y5fotd.mp4" preload="auto" crossorigin="anonymous" webkit-playsinline playsinline loop muted></video>
       </a-assets>
 
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-      <a-entity mindar-image-target="targetIndex: 0">
+      <a-entity mindar-image-target="targetIndex: 0" id="ar-target">
+        
         <!-- Відео-площина з плавними переходами -->
         <a-plane id="video-plane" src="#my-video" position="0 0 0" height="1.33" width="0.75" 
                  rotation="0 0 0" scale="1 1 1"
                  material="shader: flat; transparent: true; opacity: 0;"
-                 
                  animation__fadein="property: material.opacity; to: 1; dur: 1200; easing: easeInOutCubic; startEvents: showVideo"
                  animation__fadeout="property: material.opacity; to: 0; dur: 800; easing: easeInOutCubic; startEvents: hideVideo">
         </a-plane>
+
+        <!-- Романтичні спецефекти: сяючі частки навколо відео -->
+        <a-entity id="romantic-particles" position="0 0 0" scale="1 1 1" material="opacity: 0" animation__fadein="property: material.opacity; to: 1; dur: 1000; startEvents: showVideo">
+          <!-- Верхній лівий сяючий елемент -->
+          <a-sphere position="-0.45 0.7 0.05" radius="0.03" color="#ff416c" material="emissive: #ff416c; emissiveIntensity: 0.8; transparent: true; opacity: 0.8"
+                    animation="property: position; to: -0.45 0.75 0.05; dir: alternate; dur: 2000; loop: true; easing: easeInOutSine">
+          </a-sphere>
+          <!-- Правий нижній сяючий елемент -->
+          <a-sphere position="0.45 -0.7 0.05" radius="0.025" color="#ff758c" material="emissive: #ff758c; emissiveIntensity: 0.8; transparent: true; opacity: 0.8"
+                    animation="property: position; to: 0.45 -0.75 0.05; dir: alternate; dur: 2500; loop: true; easing: easeInOutSine">
+          </a-sphere>
+          <!-- Верхній правий елемент -->
+          <a-sphere position="0.4 0.65 0.05" radius="0.02" color="#ff4b2b" material="emissive: #ff4b2b; emissiveIntensity: 0.8; transparent: true; opacity: 0.8"
+                    animation="property: position; to: 0.4 0.7 0.05; dir: alternate; dur: 1800; loop: true; easing: easeInOutSine">
+          </a-sphere>
+        </a-entity>
+
       </a-entity>
       
     </a-scene>
@@ -137,8 +160,9 @@
     <script>
       const overlay = document.querySelector("#start-overlay");
       const videoElement = document.querySelector("#my-video");
-      const targetEntity = document.querySelector('[mindar-image-target]');
+      const targetEntity = document.querySelector('#ar-target');
       const videoPlane = document.querySelector("#video-plane");
+      const romanticParticles = document.querySelector("#romantic-particles");
       const scanInstruction = document.querySelector("#scan-instruction");
       const soundToggle = document.querySelector("#sound-toggle");
 
@@ -149,9 +173,58 @@
       let baseScale = 1;
       let currentScale = 1;
 
+      // Web Audio API для справжнього об'ємного 3D-звуку
+      let audioCtx = null;
+      let pannerNode = null;
+      let sourceNode = null;
+      let targetWorldPos = new THREE.Vector3();
+      const cameraObj = document.querySelector('a-camera').object3D;
+
+      function initSpatialAudio() {
+        if (audioCtx) return;
+        try {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          audioCtx = new AudioContext();
+          
+          sourceNode = audioCtx.createMediaElementSource(videoElement);
+          pannerNode = audioCtx.createPanner();
+          
+          // Налаштування об'ємного звуку (HRTF для максимальної реалістичності)
+          pannerNode.panningModel = 'HRTF';
+          pannerNode.distanceModel = 'inverse';
+          pannerNode.refDistance = 1;
+          pannerNode.maxDistance = 10000;
+          pannerNode.rolloffFactor = 1.5;
+
+          sourceNode.connect(pannerNode);
+          pannerNode.connect(audioCtx.destination);
+          
+          if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+          }
+        } catch (e) {
+          console.log("Spatial audio initialization warning:", e);
+        }
+      }
+
+      // Оновлення позиції об'ємного звуку в реальному часі
+      function updateAudioPosition() {
+        if (pannerNode && targetEntity) {
+          targetEntity.object3D.getWorldPosition(targetWorldPos);
+          pannerNode.positionX.value = targetWorldPos.x;
+          pannerNode.positionY.value = targetWorldPos.y;
+          pannerNode.positionZ.value = targetWorldPos.z;
+        }
+        requestAnimationFrame(updateAudioPosition);
+      }
+
+      // Розблокування аудіо та AR за тапом
       overlay.addEventListener("click", () => {
         isUnlocked = true;
         videoElement.muted = false;
+
+        initSpatialAudio();
+        requestAnimationFrame(updateAudioPosition);
 
         overlay.style.opacity = "0";
         setTimeout(() => {
@@ -165,34 +238,43 @@
         videoElement.play().then(() => {
           videoElement.pause();
           videoElement.currentTime = 0;
-        }).catch(err => console.log("Audio unlock error:", err));
+        }).catch(err => console.log("Audio unlock warning:", err));
       });
 
+      // Перемикач звуку
       soundToggle.addEventListener("click", () => {
         videoElement.muted = !videoElement.muted;
         soundToggle.textContent = videoElement.muted ? "🔇" : "🔊";
       });
 
-      targetEntity.addEventListener("targetFound", event => {
+      // Знаходження цілі (маркера)
+      targetEntity.addEventListener("targetFound", () => {
         if (!isUnlocked) return;
         if (fadeOutTimeout) clearTimeout(fadeOutTimeout);
         
         scanInstruction.classList.remove("visible");
-        videoElement.play().catch(err => console.log("Play error:", err));
+        
+        const playPromise = videoElement.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(err => console.log("Play interrupted:", err));
+        }
         videoPlane.emit("showVideo");
+        romanticParticles.emit("showVideo");
       });
       
-      targetEntity.addEventListener("targetLost", event => {
+      // Втрата цілі (маркера)
+      targetEntity.addEventListener("targetLost", () => {
         if (!isUnlocked) return;
         
         scanInstruction.classList.add("visible");
         videoPlane.emit("hideVideo");
+        
         fadeOutTimeout = setTimeout(() => {
           videoElement.pause();
         }, 800);
       });
 
-      // Жести Pinch-to-Zoom (зум двома пальцями)
+      // Зум двома пальцями (Pinch-to-Zoom)
       window.addEventListener('touchstart', (e) => {
         if (e.touches.length === 2) {
           initialDistance = Math.hypot(
@@ -212,6 +294,7 @@
           let factor = dist / initialDistance;
           currentScale = Math.max(0.4, Math.min(3.0, baseScale * factor));
           videoPlane.setAttribute('scale', `${currentScale} ${currentScale} ${currentScale}`);
+          romanticParticles.setAttribute('scale', `${currentScale} ${currentScale} ${currentScale}`);
         }
       });
     </script>
