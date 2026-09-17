@@ -1,10 +1,8 @@
 <html>
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <!-- Підключаємо A-Frame, MindAR та компонент частинок для ефекту сакури -->
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/aframe-particle-system-component@1.0.x/dist/aframe-particle-system-component.min.js"></script>
     
     <style>
       #start-overlay {
@@ -87,7 +85,7 @@
         background: rgba(255, 255, 255, 0.3);
       }
 
-      /* Метка часу та версії */
+      /* Мітка часу та версії */
       #time-badge {
         position: fixed;
         bottom: 12px;
@@ -113,7 +111,7 @@
 
     <div id="scan-instruction">📍 Наведіть камеру на зображення</div>
     <div id="sound-toggle">🔇</div>
-    <div id="time-badge">07:15 | Test #19</div>
+    <div id="time-badge">07:24 | Test #20</div>
 
     <a-scene mindar-image="imageTargetSrc: targets.mind; filterMinCF: 0.01; filterBeta: 2000; warmupTolerance: 3; missTolerance: 5;" color-space="sRGB" renderer="colorManagement: true; antialias: false; precision: mediump; physicallyCorrectLights: false;" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
       
@@ -124,8 +122,7 @@
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
       <a-entity mindar-image-target="targetIndex: 0">
-        
-        <!-- Відео-площина -->
+        <!-- Відео-площина з плавними переходами -->
         <a-plane id="video-plane" src="#my-video" position="0 0 0" height="1.33" width="0.75" 
                  rotation="0 0 0" scale="1 1 1"
                  material="shader: flat; transparent: true; opacity: 0;"
@@ -133,10 +130,6 @@
                  animation__fadein="property: material.opacity; to: 1; dur: 1200; easing: easeInOutCubic; startEvents: showVideo"
                  animation__fadeout="property: material.opacity; to: 0; dur: 800; easing: easeInOutCubic; startEvents: hideVideo">
         </a-plane>
-
-        <!-- Романтичний ефект сакури / пелюсток навколо відео -->
-        <a-entity particle-system="preset: snow; color: #ffb7c5, #ff69b4, #ffffff; particleCount: 150; speed: 0.6; accelerationValue: 0 -0.05 0; maxAge: 3.5; size: 0.8;" position="0 0 0"></a-entity>
-
       </a-entity>
       
     </a-scene>
@@ -152,7 +145,6 @@
       let fadeOutTimeout = null;
       let isUnlocked = false;
 
-      // Змінні для жестів Zoom (масштабування двома пальцями)
       let initialDistance = 0;
       let baseScale = 1;
       let currentScale = 1;
@@ -200,7 +192,7 @@
         }, 800);
       });
 
-      // Обробка жестів Pinch-to-Zoom (зум двома пальцями)
+      // Жести Pinch-to-Zoom (зум двома пальцями)
       window.addEventListener('touchstart', (e) => {
         if (e.touches.length === 2) {
           initialDistance = Math.hypot(
@@ -218,7 +210,6 @@
             e.touches[0].clientY - e.touches[1].clientY
           );
           let factor = dist / initialDistance;
-          // Обмежуємо зум в межах від 0.4x до 3.0x
           currentScale = Math.max(0.4, Math.min(3.0, baseScale * factor));
           videoPlane.setAttribute('scale', `${currentScale} ${currentScale} ${currentScale}`);
         }
