@@ -2,238 +2,131 @@
 <html lang="uk">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <title>WebAR Фотоальбом</title>
 
-  <script src="https://aframe.io/releases/1.8.0/aframe.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
+  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
 
   <style>
-    /* === ФІКС БІЛОЇ ПОЛОСИ === */
+    /* Мінімум CSS — решту MindAR робить сам */
     html, body {
       margin: 0;
       padding: 0;
-      width: 100%;
-      height: 100%;
       overflow: hidden;
       background: #000;
+      height: 100%;
+      width: 100%;
+    }
+
+    #start-overlay {
       position: fixed;
       inset: 0;
-    }
-
-    a-scene, a-scene canvas, .a-canvas {
-      position: fixed !important;
-      top: 0 !important;
-      left: 0 !important;
-      width: 100vw !important;
-      height: 100vh !important;
-      height: 100dvh !important;
-      display: block !important;
-    }
-
-    /* Відео з камери MindAR — на весь екран */
-    .mindar-ui-overlay,
-    video.mindar-video,
-    .mindar-video-container video {
-      position: fixed !important;
-      top: 0 !important;
-      left: 0 !important;
-      width: 100vw !important;
-      height: 100vh !important;
-      height: 100dvh !important;
-      object-fit: cover !important;
-      z-index: -1;
-    }
-
-    /* === ЗАВАНТАЖЕННЯ === */
-    #loading {
-      position: fixed;
-      inset: 0;
-      background: #0a0a0a;
+      background: rgba(0, 0, 0, 0.9);
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
       z-index: 9999;
-      color: #fff;
-      transition: opacity 0.8s ease;
     }
-    #loading.hidden { opacity: 0; pointer-events: none; }
-    .spinner {
-      width: 48px; height: 48px;
-      border: 3px solid rgba(255,255,255,0.15);
-      border-top-color: #6c63ff;
-      border-radius: 50%;
-      animation: spin 0.9s linear infinite;
-      margin-bottom: 20px;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    #loading p { font-size: 15px; opacity: 0.7; }
+    #start-overlay.hidden { display: none; }
 
-    /* === КНОПКА СТАРТУ === */
     #start-btn {
-      position: fixed;
-      bottom: calc(32px + env(safe-area-inset-bottom));
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 10000;
-      padding: 16px 48px;
+      padding: 18px 52px;
       border: none;
       border-radius: 50px;
       background: linear-gradient(135deg, #6c63ff, #a855f7);
       color: #fff;
-      font-size: 17px;
+      font-size: 18px;
       font-weight: 600;
-      box-shadow: 0 8px 32px rgba(108, 99, 255, 0.45);
       cursor: pointer;
+      box-shadow: 0 8px 32px rgba(108, 99, 255, 0.5);
     }
-    #start-btn:active { transform: translateX(-50%) scale(0.96); }
-    #start-btn.hidden { display: none; }
-
-    /* === ПОМИЛКА === */
-    #error-msg {
-      position: fixed;
-      bottom: calc(100px + env(safe-area-inset-bottom));
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(220, 38, 38, 0.95);
-      color: #fff;
-      padding: 12px 24px;
-      border-radius: 12px;
-      font-size: 14px;
-      z-index: 10001;
-      display: none;
-      max-width: 80%;
-      text-align: center;
-    }
-    #error-msg.show { display: block; }
   </style>
 </head>
 <body>
 
-  <div id="loading">
-    <div class="spinner"></div>
-    <p>Ініціалізація AR…</p>
+  <!-- Оверлей з кнопкою запуску -->
+  <div id="start-overlay">
+    <button id="start-btn">▶ Відкрити камеру</button>
   </div>
-
-  <button id="start-btn" class="hidden">▶ Відкрити камеру</button>
-  <div id="error-msg"></div>
 
   <a-scene
     mindar-image="imageTargetSrc: ./targets.mind;"
-    vr-mode-ui="enabled: false"
-    device-orientation-permission-ui="enabled: false"
     color-space="sRGB"
     renderer="colorManagement: true; physicallyCorrectLights: true;"
-    embedded
+    vr-mode-ui="enabled: false"
+    device-orientation-permission-ui="enabled: false"
   >
+    <!-- Відео-джерело -->
+    <a-assets>
+      <video id="ar-video"
+             src="./video.mp4"
+             preload="auto"
+             muted
+             autoplay
+             loop
+             crossorigin="anonymous"
+             webkit-playsinline
+             playsinline></video>
+    </a-assets>
+
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
     <a-entity mindar-image-target="targetIndex: 0">
-      <!-- Прямий URL, а не #id — надійніше -->
-      <a-video
-        src="https://files.catbox.moe/y5fotd.mp4"
-        position="0 0 0"
-        width="1"
-        height="0.5625"
-        rotation="0 0 0"
-        autoplay
-        muted
-        playsinline
-        loop
-        crossorigin="anonymous"
-        material="shader: flat; opacity: 1; side: double;"
-        animation="property: scale; from: 0.01 0.01 0.01; to: 1 1 1; dur: 600; easing: easeOutBack;"
-      ></a-video>
+      <a-video src="#ar-video"
+               position="0 0 0"
+               height="1"
+               width="1"
+               rotation="0 0 0"></a-video>
     </a-entity>
   </a-scene>
 
   <script>
-    const loadingEl = document.getElementById('loading');
-    const startBtn  = document.getElementById('start-btn');
-    const errorMsg  = document.getElementById('error-msg');
     const sceneEl   = document.querySelector('a-scene');
+    const overlay   = document.getElementById('start-overlay');
+    const videoEl   = document.getElementById('ar-video');
 
-    function showError(msg) {
-      errorMsg.textContent = msg;
-      errorMsg.classList.add('show');
-      setTimeout(() => errorMsg.classList.remove('show'), 6000);
-    }
+    // Логи для діагностики (дивіться в Safari → Розробка → [iPhone])
+    videoEl.addEventListener('loadeddata', () => console.log('✅ Відео завантажено'));
+    videoEl.addEventListener('error', (e) => console.error('❌ Помилка відео:', e));
+    videoEl.addEventListener('playing', () => console.log('▶ Відео відтворюється'));
+    videoEl.addEventListener('pause', () => console.log('⏸ Відео на паузі'));
 
-    // Витягуємо HTML5-video, яке створив A-Frame всередині a-video
-    let arVideo = null;
-    function getArVideo() {
-      if (arVideo) return arVideo;
-      const aVideo = document.querySelector('a-video');
-      if (aVideo && aVideo.components && aVideo.components.material) {
-        arVideo = aVideo.components.material.material.map.image;
-      }
-      return arVideo;
-    }
+    // Клік по кнопці — запускає і камеру, і відео
+    overlay.addEventListener('click', async () => {
 
-    sceneEl.addEventListener('renderstart', () => {
-      loadingEl.classList.add('hidden');
-      startBtn.classList.remove('hidden');
-      console.log('✅ Сцена готова');
-    });
-
-    // Перевіряємо, чи завантажилось відео
-    setTimeout(() => {
-      const v = getArVideo();
-      if (v) {
-        v.addEventListener('error', () => {
-          showError('Відео не завантажилось. Перевірте CORS або перезалийте файл на GitHub.');
-        });
-        v.addEventListener('loadeddata', () => console.log('✅ Відео завантажено'));
-      }
-    }, 1000);
-
-    startBtn.addEventListener('click', async () => {
-      startBtn.classList.add('hidden');
-
+      // 1. Запускаємо відео ПЕРЕД камерою (вимога iOS)
       try {
-        // Запускаємо MindAR
-        const arSystem = sceneEl.systems['mindar-image-system'];
-        if (arSystem) {
-          await arSystem.start();
-          console.log('✅ Камера запущена');
-        }
-
-        // Пробуємо відтворити відео явно
-        const v = getArVideo();
-        if (v) {
-          v.muted = true;
-          v.playsInline = true;
-          await v.play();
-          console.log('✅ Відео відтворюється');
-        }
+        videoEl.muted = true;
+        videoEl.playsInline = true;
+        await videoEl.play();
+        console.log('✅ video.play() успішно');
       } catch (err) {
-        console.warn('Помилка запуску:', err);
-        showError('Не вдалося запустити камеру або відео.');
+        console.error('❌ video.play() не спрацював:', err);
       }
+
+      // 2. Запускаємо MindAR
+      try {
+        sceneEl.systems['mindar-image-system'].start();
+        console.log('✅ Камера запущена');
+      } catch (err) {
+        console.error('❌ Помилка камери:', err);
+      }
+
+      overlay.classList.add('hidden');
     });
 
+    // Події трекінгу
     const targetEl = document.querySelector('[mindar-image-target]');
 
     targetEl.addEventListener('targetFound', () => {
-      console.log('✅ Таргет знайдено');
-      const v = getArVideo();
-      if (v) v.play().catch(err => console.warn('play() blocked:', err));
+      console.log('🎯 Таргет знайдено');
+      videoEl.play().catch(err => console.warn('play() blocked:', err));
     });
 
     targetEl.addEventListener('targetLost', () => {
-      console.log('❌ Таргет втрачено');
-      const v = getArVideo();
-      if (v) v.pause();
-    });
-
-    document.addEventListener('visibilitychange', () => {
-      if (document.hidden) {
-        const v = getArVideo();
-        if (v) v.pause();
-      }
+      console.log('🚫 Таргет втрачено');
+      videoEl.pause();
     });
   </script>
 </body>
