@@ -2,7 +2,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>WebAR with Wide Spatial Audio</title>
+    <title>WebAR Stable Spatial Audio</title>
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
     
@@ -106,15 +106,15 @@
   <body style="margin: 0; overflow: hidden;">
     
     <div id="start-overlay">
-      <button id="start-btn">▶ Запустити AR зі звуком</button>
-      <div id="start-hint">(натисніть для активації камери та об'ємного аудіо)</div>
+      <button id="start-btn">▶ Запустити AR</button>
+      <div id="start-hint">(натисніть для активації камери та звуку)</div>
     </div>
 
     <div id="scan-instruction">📍 Наведіть камеру на зображення</div>
     <div id="sound-toggle">🔇</div>
-    <div id="time-badge">07:42 | Wide Spatial</div>
+    <div id="time-badge">07:51 | Fixed Audio</div>
 
-    <!-- Фільтри налаштовані проти тремтіння (jitter) -->
+    <!-- Фільтри проти тремтіння (jitter) -->
     <a-scene mindar-image="imageTargetSrc: targets.mind; filterMinCF: 0.001; filterBeta: 10; warmupTolerance: 5; missTolerance: 10;" 
              color-space="sRGB" 
              renderer="colorManagement: true; antialias: false; precision: mediump;" 
@@ -128,7 +128,6 @@
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
       <a-entity mindar-image-target="targetIndex: 0" id="ar-target">
-        <!-- Відео-площина без тремтіння -->
         <a-plane id="video-plane" src="#my-video" position="0 0 0" height="1.33" width="0.75" 
                  rotation="0 0 0" scale="1 1 1"
                  material="shader: flat; transparent: true; opacity: 0;"
@@ -149,12 +148,13 @@
 
       let fadeOutTimeout = null;
       let isUnlocked = false;
+      let isUserMuted = false;
 
       let initialDistance = 0;
       let baseScale = 1;
       let currentScale = 1;
 
-      // Web Audio API змінні для об'ємного звуку
+      // Web Audio API для стабільного об'ємного звуку без втрати гучності
       let audioCtx = null;
       let pannerNode = null;
       let sourceNode = null;
@@ -169,25 +169,20 @@
           sourceNode = audioCtx.createMediaElementSource(videoElement);
           pannerNode = audioCtx.createPanner();
           
-          // Налаштування широкого об'ємного звуку (без раптових зникнень)
+          // Налаштування: панорамування є, але затухання за дистанцією вимкнено (гучність завжди 100%)
           pannerNode.panningModel = 'HRTF';
-          pannerNode.distanceModel = 'inverse';
-          pannerNode.refDistance = 10;     // Велика зона максимальної гучності
+          pannerNode.distanceModel = 'linear';
+          pannerNode.refDistance = 1;
           pannerNode.maxDistance = 10000;
-          pannerNode.rolloffFactor = 0.2;  // Плавне, мінімальне затухання на відстані
+          pannerNode.rolloffFactor = 0; // Робить звук стабільним на будь-якій відстані!
 
           sourceNode.connect(pannerNode);
           pannerNode.connect(audioCtx.destination);
-          
-          if (audioCtx.state === 'suspended') {
-            audioCtx.resume();
-          }
         } catch (e) {
           console.log("Spatial audio init warning:", e);
         }
       }
 
-      // Постійне оновлення координат джерела звуку за міткою
       function updateAudioPosition() {
         if (pannerNode && targetEntity) {
           targetEntity.object3D.getWorldPosition(targetWorldPos);
@@ -198,10 +193,10 @@
         requestAnimationFrame(updateAudioPosition);
       }
 
-      // Розблокування за тапом користувача
+      // Клік по стартовому екрану — тільки розблокування, звук НЕ грає до пошуку мітки
       overlay.addEventListener("click", () => {
         isUnlocked = true;
-        videoElement.muted = false;
+        videoElement.muted = true; // Запускаємо беззвучно для розблокування мобільним браузером
 
         initSpatialAudio();
         requestAnimationFrame(updateAudioPosition);
@@ -218,22 +213,28 @@
         videoElement.play().then(() => {
           videoElement.pause();
           videoElement.currentTime = 0;
-        }).catch(err => console.log("Audio unlock error:", err));
+        }).catch(err => console.log("Unlock error:", err));
       });
 
       // Кнопка звуку
       soundToggle.addEventListener("click", () => {
-        videoElement.muted = !videoElement.muted;
-        soundToggle.textContent = videoElement.muted ? "🔇" : "🔊";
+        isUserMuted = !isUserMuted;
+        videoElement.muted = isUserMuted;
+        soundToggle.textContent = isUserMuted ? "🔇" : "🔊";
       });
 
-      // Знаходження цілі
+      // Знайшли мітку — запускаємо і звук, і відео одночасно!
       targetEntity.addEventListener("targetFound", () => {
         if (!isUnlocked) return;
         if (fadeOutTimeout) clearTimeout(fadeOutTimeout);
         
         scanInstruction.classList.remove("visible");
         
+        if (audioCtx && audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+
+        videoElement.muted = isUserMuted;
         const playPromise = videoElement.play();
         if (playPromise !== undefined) {
           playPromise.catch(err => console.log("Play error:", err));
@@ -241,7 +242,7 @@
         videoPlane.emit("showVideo");
       });
       
-      // Втрата цілі
+      // Втратили мітку — плавно ховаємо і ставимо на паузу
       targetEntity.addEventListener("targetLost", () => {
         if (!isUnlocked) return;
         
@@ -253,7 +254,7 @@
         }, 500);
       });
 
-      // Плавний зум двома пальцями
+      // Зум двома пальцями
       window.addEventListener('touchstart', (e) => {
         if (e.touches.length === 2) {
           initialDistance = Math.hypot(
