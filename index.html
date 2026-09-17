@@ -19,7 +19,7 @@
         color: rgba(255, 255, 255, 0.7); /* Напівпрозорий білий колір тексту */
         font-family: monospace;/* Моноширинний шрифт для чіткого вигляду */
         font-size: 11px;       /* Невеликий мінімалістичний розмір шрифту */
-        pointer-events: none;  /* Клік проходит крізь текст, не блокуючи взаємодію з камерою */
+        pointer-events: none;  /* Клік проходить крізь текст, не блокуючи взаємодію з камерою */
         letter-spacing: 0.5px; /* Легке розрідження між символами */
         text-shadow: 0 1px 2px rgba(0,0,0,0.5); /* Легка тінь для читабельності на світлому фоні */
       }
@@ -30,15 +30,15 @@
   <body style="margin: 0; overflow: hidden;">
     
     <!-- Елемент із статичним часом (використовується як версія релізу: тільки години і хвилини) -->
-    <div id="time-badge">05:00</div>
+    <div id="time-badge">05:01</div>
 
     <!-- Головний контейнер AR-сцени MindAR (вказується файл з маркерами targets.mind) -->
     <a-scene mindar-image="imageTargetSrc: targets.mind;" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
       
       <!-- Контейнер для завантаження медіаресурсів (відео) -->
       <a-assets>
-        <!-- Підключення відеофайлу з Catbox із атрибутами для плавної мобільної оптимізації -->
-        <video id="my-video" src="https://files.catbox.moe/y5fotd.mp4" preload="auto" response-type="arraybuffer" crossorigin="anonymous" webkit-playsinline playsinline></video>
+        <!-- Підключення відеофайлу з Catbox із атрибутом loop для циклічного відтворення -->
+        <video id="my-video" src="https://files.catbox.moe/y5fotd.mp4" preload="auto" response-type="arraybuffer" crossorigin="anonymous" webkit-playsinline playsinline loop></video>
       </a-assets>
 
       <!-- Віртуальна камера спостерігача (початкова позиція за замовчуванням) -->
