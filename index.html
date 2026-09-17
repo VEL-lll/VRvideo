@@ -11,106 +11,124 @@
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
 
   <style>
-    /* === БАЗА === */
     html, body {
-      margin: 0;
-      padding: 0;
-      width: 100%;
-      height: 100%;
+      margin: 0; padding: 0;
+      width: 100%; height: 100%;
       overflow: hidden;
-      background: transparent !important; /* ВАЖЛИВО: не чорний */
+      background: transparent !important;
       position: fixed;
       inset: 0;
+      -webkit-tap-highlight-color: transparent;
     }
 
-    /* === A-FRAME CANVAS === */
     a-scene, a-scene canvas, .a-canvas {
       position: fixed !important;
-      top: 0 !important;
-      left: 0 !important;
-      width: 100vw !important;
-      height: 100vh !important;
+      top: 0 !important; left: 0 !important;
+      width: 100vw !important; height: 100vh !important;
       height: 100dvh !important;
       display: block !important;
-      background: transparent !important; /* прозорий, щоб було видно камеру */
+      background: transparent !important;
     }
 
-    /* === КАМЕРА MINDAR — МАЄ БУТИ ПІД CANVAS, АЛЕ НЕ ЗА ЧОРНИМ ФОНОМ === */
-    .mindar-ui-overlay,
+    /* Камера MindAR — на весь екран, під canvas */
     video.mindar-video,
     .mindar-video-container video,
     #ar-camera-video {
       position: fixed !important;
-      top: 0 !important;
-      left: 0 !important;
-      width: 100vw !important;
-      height: 100vh !important;
+      top: 0 !important; left: 0 !important;
+      width: 100vw !important; height: 100vh !important;
       height: 100dvh !important;
       object-fit: cover !important;
-      z-index: 0 !important; /* ПІД canvas, але НАД body */
+      z-index: 0 !important;
       background: #000;
     }
 
     /* === ЗАВАНТАЖЕННЯ === */
     #loading {
-      position: fixed;
-      inset: 0;
+      position: fixed; inset: 0;
       background: #0a0a0a;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      z-index: 9999;
-      color: #fff;
-      transition: opacity 0.8s ease;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      z-index: 9999; color: #fff;
+      transition: opacity 0.6s ease;
     }
     #loading.hidden { opacity: 0; pointer-events: none; }
     .spinner {
-      width: 48px; height: 48px;
+      width: 44px; height: 44px;
       border: 3px solid rgba(255,255,255,0.15);
       border-top-color: #6c63ff;
       border-radius: 50%;
       animation: spin 0.9s linear infinite;
-      margin-bottom: 20px;
+      margin-bottom: 18px;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
-    #loading p { font-size: 15px; opacity: 0.7; }
+    #loading p { font-size: 14px; opacity: 0.7; letter-spacing: 0.5px; }
 
-    /* === КНОПКА === */
-    #start-btn {
-      position: fixed;
-      bottom: calc(32px + env(safe-area-inset-bottom));
-      left: 50%;
-      transform: translateX(-50%);
+    /* === КНОПКА СТАРТУ — мінімалістична, в стилі AR === */
+    #start-overlay {
+      position: fixed; inset: 0;
+      background: radial-gradient(circle at 50% 60%, #1a1a2e 0%, #0a0a0a 100%);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
       z-index: 10000;
-      padding: 16px 48px;
+      transition: opacity 0.5s ease;
+    }
+    #start-overlay.hidden { opacity: 0; pointer-events: none; }
+
+    #start-overlay h1 {
+      color: #fff;
+      font-size: 22px;
+      font-weight: 600;
+      margin: 0 0 8px;
+      letter-spacing: 0.5px;
+      text-align: center;
+      padding: 0 24px;
+    }
+    #start-overlay p {
+      color: rgba(255,255,255,0.55);
+      font-size: 14px;
+      margin: 0 0 32px;
+      text-align: center;
+      padding: 0 32px;
+      line-height: 1.5;
+    }
+
+    #start-btn {
+      padding: 16px 44px;
       border: none;
       border-radius: 50px;
       background: linear-gradient(135deg, #6c63ff, #a855f7);
       color: #fff;
-      font-size: 17px;
+      font-size: 16px;
       font-weight: 600;
-      box-shadow: 0 8px 32px rgba(108, 99, 255, 0.45);
+      letter-spacing: 0.3px;
+      box-shadow: 0 8px 32px rgba(108, 99, 255, 0.5);
       cursor: pointer;
+      transition: transform 0.15s ease;
     }
-    #start-btn:active { transform: translateX(-50%) scale(0.96); }
-    #start-btn.hidden { display: none; }
+    #start-btn:active { transform: scale(0.95); }
 
-    /* === ПОМИЛКА === */
+    #start-overlay .hint {
+      margin-top: 22px;
+      color: rgba(255,255,255,0.35);
+      font-size: 12px;
+    }
+
     #error-msg {
       position: fixed;
-      bottom: calc(100px + env(safe-area-inset-bottom));
+      bottom: calc(30px + env(safe-area-inset-bottom));
       left: 50%;
       transform: translateX(-50%);
       background: rgba(220, 38, 38, 0.95);
       color: #fff;
-      padding: 12px 24px;
+      padding: 12px 22px;
       border-radius: 12px;
-      font-size: 14px;
+      font-size: 13px;
       z-index: 10001;
       display: none;
-      max-width: 80%;
+      max-width: 85%;
       text-align: center;
+      line-height: 1.4;
     }
     #error-msg.show { display: block; }
   </style>
@@ -119,62 +137,66 @@
 
   <div id="loading">
     <div class="spinner"></div>
-    <p>Ініціалізація AR…</p>
+    <p>Завантаження AR…</p>
   </div>
 
-  <button id="start-btn" class="hidden">▶ Увімкнути AR</button>
+  <!-- Екран старту: один клік — і камера + звук увімкнені -->
+  <div id="start-overlay" class="hidden">
+    <h1>AR Фотоальбом</h1>
+    <p>Наведіть камеру на фотографію — вона оживе</p>
+    <button id="start-btn">▶ Почати</button>
+    <div class="hint">Потрібен доступ до камери</div>
+  </div>
+
   <div id="error-msg"></div>
 
   <a-scene
-    mindar-image="imageTargetSrc: ./targets.mind; uiLoading: no; uiScanning: no; uiError: no;"
+    mindar-image="imageTargetSrc: ./targets.mind; uiLoading: no; uiScanning: no; uiError: no; maxTrack: 1;"
     vr-mode-ui="enabled: false"
     device-orientation-permission-ui="enabled: false"
     color-space="sRGB"
-    renderer="alpha: true; colorManagement: true; physicallyCorrectLights: true;"
+    renderer="alpha: true; colorManagement: true; antialias: true;"
     embedded
   >
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
     <a-entity mindar-image-target="targetIndex: 0">
       <!--
-        ВАЖЛИВО:
-        width="1" height="1.7777" — вертикальний формат (9:16), типовий для мобільних відео.
-        Якщо ваше відео горизонтальне (16:9) — поміняйте на width="1.7777" height="1".
-        Центруємо так, щоб площина була точно по центру таргету.
+        Відео центрується на таргеті. Розмір (width/height)
+        підлаштовується через JS після завантаження метаданих відео.
       -->
       <a-video
+        id="ar-video-plane"
         src="#ar-video"
-        position="0 0 0"
+        position="0 0 0.001"
         width="1"
-        height="1.7777"
+        height="1"
         rotation="0 0 0"
-        autoplay="false"
         loop="true"
-        crossorigin="anonymous"
         material="shader: flat; opacity: 1; side: double; transparent: true;"
-        animation="property: scale; from: 0.01 0.01 0.01; to: 1 1 1; dur: 500; easing: easeOutBack;"
       ></a-video>
     </a-entity>
   </a-scene>
 
-  <!-- Відео беремо напряму з Catbox -->
+  <!-- Джерело відео — ваше посилання Catbox -->
   <video
     id="ar-video"
     src="https://files.catbox.moe/y5fotd.mp4"
     preload="auto"
-    crossorigin="anonymous"
     playsinline
     webkit-playsinline
     loop
-    style="display: none;"
+    style="display:none;"
   ></video>
 
   <script>
     const loadingEl = document.getElementById('loading');
+    const startOverlay = document.getElementById('start-overlay');
     const startBtn  = document.getElementById('start-btn');
     const errorMsg  = document.getElementById('error-msg');
     const sceneEl   = document.querySelector('a-scene');
     const videoEl   = document.getElementById('ar-video');
+    const videoPlane = document.getElementById('ar-video-plane');
 
     function showError(msg) {
       errorMsg.textContent = msg;
@@ -182,56 +204,70 @@
       setTimeout(() => errorMsg.classList.remove('show'), 6000);
     }
 
-    // === КРИТИЧНО: робимо canvas прозорим, щоб було видно камеру ===
+    // === КРИТИЧНО: прозорий canvas, щоб камера була видна ===
     sceneEl.addEventListener('renderstart', () => {
       loadingEl.classList.add('hidden');
-      startBtn.classList.remove('hidden');
+      startOverlay.classList.remove('hidden');
 
-      // Прозорий фон canvas A-Frame
       const canvas = sceneEl.canvas;
       if (canvas) {
         canvas.style.background = 'transparent';
         const gl = canvas.getContext('webgl') || canvas.getContext('webgl2');
-        if (gl) {
-          gl.clearColor(0, 0, 0, 0);
-        }
+        if (gl) gl.clearColor(0, 0, 0, 0);
       }
-
       console.log('✅ Сцена готова');
     });
 
-    // === Перевірка завантаження відео ===
-    videoEl.addEventListener('error', (e) => {
-      console.error('Помилка відео:', e);
-      showError('Не вдалося завантажити відео з Catbox. Можлива CORS-блок.');
-    });
-    videoEl.addEventListener('loadeddata', () => {
-      console.log('✅ Відео з Catbox завантажено');
+    // === Підлаштування пропорцій відео під реальне співвідношення сторін ===
+    videoEl.addEventListener('loadedmetadata', () => {
+      const vw = videoEl.videoWidth;
+      const vh = videoEl.videoHeight;
+      if (!vw || !vh) return;
+
+      const aspect = vw / vh;
+
+      // Робимо так, щоб довша сторона = 1 одиниця A-Frame
+      let w, h;
+      if (aspect >= 1) {
+        // горизонтальне
+        w = 1.0;
+        h = 1.0 / aspect;
+      } else {
+        // вертикальне
+        h = 1.0;
+        w = aspect;
+      }
+
+      videoPlane.setAttribute('width', w);
+      videoPlane.setAttribute('height', h);
+      console.log(`✅ Пропорції відео: ${vw}x${vh} → ${w.toFixed(3)} x ${h.toFixed(3)}`);
     });
 
-    // === ЗАПУСК ===
+    videoEl.addEventListener('error', () => {
+      showError('Не вдалося завантажити відео. Перевірте посилання.');
+    });
+
+    // === СТАРТ ===
     startBtn.addEventListener('click', async () => {
-      startBtn.classList.add('hidden');
+      startOverlay.classList.add('hidden');
 
       try {
-        // 1. СПОЧАТКУ активуємо відео (у межах user gesture — щоб був звук)
-        videoEl.muted = false;      // звук УВІМК
+        // 1. Розблоковуємо відео зі звуком (у межах user gesture)
+        videoEl.muted = false;
         videoEl.volume = 1.0;
         await videoEl.play();
-        videoEl.pause();            // одразу пауза — гратимемо лише коли знайдено таргет
-        console.log('✅ Відео розблоковано для відтворення зі звуком');
+        videoEl.pause();
+        console.log('✅ Відео розблоковано зі звуком');
 
-        // 2. ПОТІМ запускаємо камеру MindAR
+        // 2. Запускаємо MindAR-камеру
         const arSystem = sceneEl.systems['mindar-image-system'];
         if (arSystem) {
           await arSystem.start();
           console.log('✅ Камера запущена');
-        } else {
-          console.warn('⚠️ mindar-image-system не знайдено');
         }
       } catch (err) {
-        console.error('Помилка запуску:', err);
-        showError('Не вдалося запустити камеру. Дозвольте доступ до камери в налаштуваннях Safari.');
+        console.error('Помилка:', err);
+        showError('Дозвольте доступ до камери в налаштуваннях Safari.');
       }
     });
 
@@ -241,17 +277,12 @@
     targetEl.addEventListener('targetFound', async () => {
       console.log('✅ Таргет знайдено');
       try {
-        videoEl.muted = false;
-        await videoEl.play();
-        console.log('▶️ Відео грає зі звуком');
-      } catch (err) {
-        console.warn('play() заблоковано, пробуємо з muted:', err);
-        try {
-          videoEl.muted = true;
+        if (videoEl.paused) {
+          videoEl.muted = false;
           await videoEl.play();
-        } catch (e2) {
-          console.error('Не вдалося відтворити відео:', e2);
         }
+      } catch (err) {
+        console.warn('play() blocked:', err);
       }
     });
 
