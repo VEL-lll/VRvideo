@@ -2,7 +2,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Romantic WebAR Experience</title>
+    <title>Stable WebAR</title>
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
     
@@ -10,7 +10,7 @@
       #start-overlay {
         position: fixed;
         inset: 0;
-        background: rgba(15, 15, 20, 0.92);
+        background: rgba(15, 15, 20, 0.95);
         z-index: 10000;
         display: flex;
         align-items: center;
@@ -22,14 +22,14 @@
         transition: opacity 0.4s ease;
       }
       #start-btn {
-        background: linear-gradient(135deg, #ff416c, #ff4b2b);
+        background: linear-gradient(135deg, #00c6ff, #0072ff);
         color: white;
         border: none;
         padding: 16px 36px;
         font-size: 16px;
         font-weight: bold;
         border-radius: 30px;
-        box-shadow: 0 8px 25px rgba(255, 65, 108, 0.5);
+        box-shadow: 0 8px 25px rgba(0, 114, 255, 0.4);
         cursor: pointer;
       }
       #start-hint {
@@ -45,7 +45,7 @@
         left: 50%;
         transform: translateX(-50%);
         z-index: 9998;
-        background: rgba(0, 0, 0, 0.75);
+        background: rgba(0, 0, 0, 0.8);
         color: white;
         padding: 10px 22px;
         border-radius: 20px;
@@ -53,7 +53,7 @@
         font-size: 14px;
         font-weight: 500;
         pointer-events: none;
-        transition: opacity 0.4s ease, transform 0.4s ease;
+        transition: opacity 0.4s ease;
         opacity: 0;
         letter-spacing: 0.3px;
         backdrop-filter: blur(6px);
@@ -87,7 +87,6 @@
         background: rgba(255, 255, 255, 0.3);
       }
 
-      /* Мітка часу та версії */
       #time-badge {
         position: fixed;
         bottom: 12px;
@@ -107,17 +106,18 @@
   <body style="margin: 0; overflow: hidden;">
     
     <div id="start-overlay">
-      <button id="start-btn">❤️ Запустити романтичне AR</button>
-      <div id="start-hint">(потрібно для об'ємного звуку та камери)</div>
+      <button id="start-btn">▶ Запустити AR</button>
+      <div id="start-hint">(натисніть для стабільного звуку та камери)</div>
     </div>
 
-    <div id="scan-instruction">📍 Наведіть камеру на фото/зображення</div>
+    <div id="scan-instruction">📍 Наведіть камеру на зображення</div>
     <div id="sound-toggle">🔇</div>
-    <div id="time-badge">07:32 | Romantic Pro</div>
+    <div id="time-badge">07:38 | Ultra Stable</div>
 
-    <a-scene mindar-image="imageTargetSrc: targets.mind; filterMinCF: 0.01; filterBeta: 2000; warmupTolerance: 3; missTolerance: 5;" 
+    <!-- Оптимізовані фільтри MindAR для усунення тремтіння (jitter) -->
+    <a-scene mindar-image="imageTargetSrc: targets.mind; filterMinCF: 0.001; filterBeta: 10; warmupTolerance: 5; missTolerance: 10;" 
              color-space="sRGB" 
-             renderer="colorManagement: true; antialias: false; precision: mediump; physicallyCorrectLights: false;" 
+             renderer="colorManagement: true; antialias: false; precision: mediump;" 
              vr-mode-ui="enabled: false" 
              device-orientation-permission-ui="enabled: false">
       
@@ -128,31 +128,13 @@
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
       <a-entity mindar-image-target="targetIndex: 0" id="ar-target">
-        
-        <!-- Відео-площина з плавними переходами -->
+        <!-- Чиста відео-площина без лагів та тремтіння -->
         <a-plane id="video-plane" src="#my-video" position="0 0 0" height="1.33" width="0.75" 
                  rotation="0 0 0" scale="1 1 1"
                  material="shader: flat; transparent: true; opacity: 0;"
-                 animation__fadein="property: material.opacity; to: 1; dur: 1200; easing: easeInOutCubic; startEvents: showVideo"
-                 animation__fadeout="property: material.opacity; to: 0; dur: 800; easing: easeInOutCubic; startEvents: hideVideo">
+                 animation__fadein="property: material.opacity; to: 1; dur: 800; easing: easeInOutCubic; startEvents: showVideo"
+                 animation__fadeout="property: material.opacity; to: 0; dur: 500; easing: easeInOutCubic; startEvents: hideVideo">
         </a-plane>
-
-        <!-- Романтичні спецефекти: сяючі частки навколо відео -->
-        <a-entity id="romantic-particles" position="0 0 0" scale="1 1 1" material="opacity: 0" animation__fadein="property: material.opacity; to: 1; dur: 1000; startEvents: showVideo">
-          <!-- Верхній лівий сяючий елемент -->
-          <a-sphere position="-0.45 0.7 0.05" radius="0.03" color="#ff416c" material="emissive: #ff416c; emissiveIntensity: 0.8; transparent: true; opacity: 0.8"
-                    animation="property: position; to: -0.45 0.75 0.05; dir: alternate; dur: 2000; loop: true; easing: easeInOutSine">
-          </a-sphere>
-          <!-- Правий нижній сяючий елемент -->
-          <a-sphere position="0.45 -0.7 0.05" radius="0.025" color="#ff758c" material="emissive: #ff758c; emissiveIntensity: 0.8; transparent: true; opacity: 0.8"
-                    animation="property: position; to: 0.45 -0.75 0.05; dir: alternate; dur: 2500; loop: true; easing: easeInOutSine">
-          </a-sphere>
-          <!-- Верхній правий елемент -->
-          <a-sphere position="0.4 0.65 0.05" radius="0.02" color="#ff4b2b" material="emissive: #ff4b2b; emissiveIntensity: 0.8; transparent: true; opacity: 0.8"
-                    animation="property: position; to: 0.4 0.7 0.05; dir: alternate; dur: 1800; loop: true; easing: easeInOutSine">
-          </a-sphere>
-        </a-entity>
-
       </a-entity>
       
     </a-scene>
@@ -162,7 +144,6 @@
       const videoElement = document.querySelector("#my-video");
       const targetEntity = document.querySelector('#ar-target');
       const videoPlane = document.querySelector("#video-plane");
-      const romanticParticles = document.querySelector("#romantic-particles");
       const scanInstruction = document.querySelector("#scan-instruction");
       const soundToggle = document.querySelector("#sound-toggle");
 
@@ -173,58 +154,10 @@
       let baseScale = 1;
       let currentScale = 1;
 
-      // Web Audio API для справжнього об'ємного 3D-звуку
-      let audioCtx = null;
-      let pannerNode = null;
-      let sourceNode = null;
-      let targetWorldPos = new THREE.Vector3();
-      const cameraObj = document.querySelector('a-camera').object3D;
-
-      function initSpatialAudio() {
-        if (audioCtx) return;
-        try {
-          const AudioContext = window.AudioContext || window.webkitAudioContext;
-          audioCtx = new AudioContext();
-          
-          sourceNode = audioCtx.createMediaElementSource(videoElement);
-          pannerNode = audioCtx.createPanner();
-          
-          // Налаштування об'ємного звуку (HRTF для максимальної реалістичності)
-          pannerNode.panningModel = 'HRTF';
-          pannerNode.distanceModel = 'inverse';
-          pannerNode.refDistance = 1;
-          pannerNode.maxDistance = 10000;
-          pannerNode.rolloffFactor = 1.5;
-
-          sourceNode.connect(pannerNode);
-          pannerNode.connect(audioCtx.destination);
-          
-          if (audioCtx.state === 'suspended') {
-            audioCtx.resume();
-          }
-        } catch (e) {
-          console.log("Spatial audio initialization warning:", e);
-        }
-      }
-
-      // Оновлення позиції об'ємного звуку в реальному часі
-      function updateAudioPosition() {
-        if (pannerNode && targetEntity) {
-          targetEntity.object3D.getWorldPosition(targetWorldPos);
-          pannerNode.positionX.value = targetWorldPos.x;
-          pannerNode.positionY.value = targetWorldPos.y;
-          pannerNode.positionZ.value = targetWorldPos.z;
-        }
-        requestAnimationFrame(updateAudioPosition);
-      }
-
-      // Розблокування аудіо та AR за тапом
+      // Розблокування за тапом
       overlay.addEventListener("click", () => {
         isUnlocked = true;
         videoElement.muted = false;
-
-        initSpatialAudio();
-        requestAnimationFrame(updateAudioPosition);
 
         overlay.style.opacity = "0";
         setTimeout(() => {
@@ -235,19 +168,20 @@
         soundToggle.style.display = "flex";
         soundToggle.textContent = "🔊";
 
+        // Ініціалізація таски відтворення
         videoElement.play().then(() => {
           videoElement.pause();
           videoElement.currentTime = 0;
-        }).catch(err => console.log("Audio unlock warning:", err));
+        }).catch(err => console.log("Init audio error:", err));
       });
 
-      // Перемикач звуку
+      // Кнопка звуку
       soundToggle.addEventListener("click", () => {
         videoElement.muted = !videoElement.muted;
         soundToggle.textContent = videoElement.muted ? "🔇" : "🔊";
       });
 
-      // Знаходження цілі (маркера)
+      // Поведінка при знаходженні цілі
       targetEntity.addEventListener("targetFound", () => {
         if (!isUnlocked) return;
         if (fadeOutTimeout) clearTimeout(fadeOutTimeout);
@@ -256,13 +190,12 @@
         
         const playPromise = videoElement.play();
         if (playPromise !== undefined) {
-          playPromise.catch(err => console.log("Play interrupted:", err));
+          playPromise.catch(err => console.log("Play error:", err));
         }
         videoPlane.emit("showVideo");
-        romanticParticles.emit("showVideo");
       });
       
-      // Втрата цілі (маркера)
+      // Поведінка при втраті цілі
       targetEntity.addEventListener("targetLost", () => {
         if (!isUnlocked) return;
         
@@ -271,10 +204,10 @@
         
         fadeOutTimeout = setTimeout(() => {
           videoElement.pause();
-        }, 800);
+        }, 500);
       });
 
-      // Зум двома пальцями (Pinch-to-Zoom)
+      // Плавний зум двома пальцями
       window.addEventListener('touchstart', (e) => {
         if (e.touches.length === 2) {
           initialDistance = Math.hypot(
@@ -294,7 +227,6 @@
           let factor = dist / initialDistance;
           currentScale = Math.max(0.4, Math.min(3.0, baseScale * factor));
           videoPlane.setAttribute('scale', `${currentScale} ${currentScale} ${currentScale}`);
-          romanticParticles.setAttribute('scale', `${currentScale} ${currentScale} ${currentScale}`);
         }
       });
     </script>
