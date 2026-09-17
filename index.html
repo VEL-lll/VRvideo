@@ -1,1780 +1,678 @@
-```html
 <!DOCTYPE html>
 <html lang="uk">
 <head>
-  <meta charset="utf-8">
+<meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width,
+               initial-scale=1,
+               maximum-scale=1,
+               user-scalable=no,
+               viewport-fit=cover">
 
-  <meta name="viewport"
-        content="width=device-width,
-                 initial-scale=1,
-                 maximum-scale=1,
-                 user-scalable=no,
-                 viewport-fit=cover">
+<title>AR Video</title>
 
-  <meta name="theme-color" content="#000000">
+<script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
 
-  <title>Ultimate AR Video Experience</title>
-
-  <!-- =========================
-       A-FRAME
-  ========================== -->
-  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-
-  <!-- =========================
-       MIND-AR
-  ========================== -->
-  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
-
-
-  <style>
-
+<style>
     * {
-      box-sizing: border-box;
-      -webkit-tap-highlight-color: transparent;
+        box-sizing: border-box;
+        -webkit-tap-highlight-color: transparent;
     }
 
     html,
     body {
-      margin: 0;
-      padding: 0;
-      width: 100%;
-      height: 100%;
-
-      overflow: hidden;
-
-      background: #000;
-
-      touch-action: none;
-
-      user-select: none;
-      -webkit-user-select: none;
-
-      -webkit-touch-callout: none;
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #000;
+        font-family: Arial, sans-serif;
     }
 
-
-    /* =========================================================
-       START SCREEN
-    ========================================================= */
-
-    #start-overlay {
-
-      position: fixed;
-
-      inset: 0;
-
-      z-index: 100000;
-
-      display: flex;
-
-      align-items: center;
-      justify-content: center;
-
-      flex-direction: column;
-
-      background:
-        radial-gradient(
-          circle at center,
-          rgba(30,35,55,0.96) 0%,
-          rgba(5,7,12,0.99) 70%
-        );
-
-      color: #fff;
-
-      font-family:
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        Roboto,
-        sans-serif;
-
-      transition:
-        opacity .6s ease,
-        visibility .6s ease;
+    body {
+        position: fixed;
+        inset: 0;
     }
 
-
-    #start-overlay.hidden {
-
-      opacity: 0;
-
-      visibility: hidden;
-
-      pointer-events: none;
+    a-scene {
+        position: fixed !important;
+        inset: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
     }
 
-
-    #start-logo {
-
-      font-size: 42px;
-
-      margin-bottom: 18px;
-
-      filter:
-        drop-shadow(0 0 20px rgba(0,180,255,.7));
-
-      animation:
-        logoPulse 2s ease-in-out infinite;
+    #start-screen {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background:
+            radial-gradient(circle at center,
+            rgba(30,30,30,.96),
+            rgba(0,0,0,1));
+        color: white;
+        transition: opacity .35s ease;
     }
 
-
-    @keyframes logoPulse {
-
-      0%,100% {
-        transform: scale(1);
-      }
-
-      50% {
-        transform: scale(1.08);
-      }
+    #start-screen.hidden {
+        opacity: 0;
+        pointer-events: none;
     }
 
-
-    #start-title {
-
-      font-size: 23px;
-
-      font-weight: 800;
-
-      margin-bottom: 8px;
-
-      letter-spacing: .3px;
+    .start-box {
+        width: min(88vw, 420px);
+        padding: 30px 24px;
+        text-align: center;
+        border-radius: 24px;
+        background: rgba(20,20,20,.9);
+        box-shadow:
+            0 20px 70px rgba(0,0,0,.65),
+            inset 0 0 0 1px rgba(255,255,255,.08);
     }
 
-
-    #start-subtitle {
-
-      font-size: 14px;
-
-      opacity: .65;
-
-      margin-bottom: 30px;
-
-      text-align: center;
-
-      max-width: 280px;
-
-      line-height: 1.5;
+    .start-title {
+        font-size: 27px;
+        font-weight: 700;
+        margin-bottom: 12px;
     }
 
-
-    #start-btn {
-
-      border: 0;
-
-      outline: none;
-
-      padding:
-        17px
-        34px;
-
-      border-radius: 50px;
-
-      color: #fff;
-
-      font-size: 16px;
-
-      font-weight: 800;
-
-      letter-spacing: .3px;
-
-      background:
-        linear-gradient(
-          135deg,
-          #00c6ff,
-          #0072ff
-        );
-
-      box-shadow:
-        0 10px 35px rgba(0,114,255,.45),
-        inset 0 1px 1px rgba(255,255,255,.3);
-
-      transition:
-        transform .15s ease,
-        box-shadow .15s ease;
+    .start-text {
+        font-size: 16px;
+        line-height: 1.45;
+        opacity: .8;
+        margin-bottom: 25px;
     }
 
-
-    #start-btn:active {
-
-      transform: scale(.95);
-
-      box-shadow:
-        0 5px 20px rgba(0,114,255,.3);
+    #start-button {
+        border: 0;
+        outline: 0;
+        padding: 15px 28px;
+        border-radius: 999px;
+        background: white;
+        color: black;
+        font-size: 17px;
+        font-weight: 700;
+        cursor: pointer;
     }
 
-
-    #start-hint {
-
-      margin-top: 15px;
-
-      font-size: 12px;
-
-      opacity: .45;
+    #status {
+        position: fixed;
+        z-index: 500;
+        top: calc(env(safe-area-inset-top) + 18px);
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 10px 18px;
+        border-radius: 999px;
+        background: rgba(0,0,0,.65);
+        color: white;
+        font-size: 14px;
+        white-space: nowrap;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity .25s ease;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
     }
 
-
-    /* =========================================================
-       SCAN UI
-    ========================================================= */
-
-    #scan-ui {
-
-      position: fixed;
-
-      top:
-        max(
-          25px,
-          env(safe-area-inset-top)
-        );
-
-      left: 50%;
-
-      transform:
-        translateX(-50%);
-
-      z-index: 9000;
-
-      pointer-events: none;
-
-      padding:
-        11px
-        19px;
-
-      border-radius: 30px;
-
-      background:
-        rgba(0,0,0,.62);
-
-      backdrop-filter:
-        blur(14px);
-
-      -webkit-backdrop-filter:
-        blur(14px);
-
-      border:
-        1px solid
-        rgba(255,255,255,.15);
-
-      color: #fff;
-
-      font-family:
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        sans-serif;
-
-      font-size: 14px;
-
-      font-weight: 600;
-
-      white-space: nowrap;
-
-      opacity: 0;
-
-      transition:
-        opacity .35s ease,
-        transform .35s ease;
-    }
-
-
-    #scan-ui.visible {
-
-      opacity: 1;
-
-      transform:
-        translateX(-50%)
-        translateY(0);
-    }
-
-
-    #scan-dot {
-
-      display: inline-block;
-
-      width: 8px;
-      height: 8px;
-
-      margin-right: 8px;
-
-      border-radius: 50%;
-
-      background: #00c6ff;
-
-      box-shadow:
-        0 0 12px #00c6ff;
-
-      animation:
-        scanPulse 1.2s infinite;
-    }
-
-
-    @keyframes scanPulse {
-
-      0%,100% {
-        opacity: .4;
-        transform: scale(.8);
-      }
-
-      50% {
+    #status.show {
         opacity: 1;
-        transform: scale(1.2);
-      }
     }
 
+    #sound-button {
+        position: fixed;
+        z-index: 600;
+        right: 18px;
+        bottom: calc(env(safe-area-inset-bottom) + 18px);
 
-    /* =========================================================
-       TARGET FOUND STATUS
-    ========================================================= */
+        width: 52px;
+        height: 52px;
 
-    #found-ui {
+        border: 0;
+        border-radius: 50%;
 
-      position: fixed;
+        background: rgba(0,0,0,.65);
+        color: white;
 
-      top: 50%;
+        font-size: 22px;
 
-      left: 50%;
+        display: none;
+        align-items: center;
+        justify-content: center;
 
-      z-index: 9100;
-
-      transform:
-        translate(-50%, -50%)
-        scale(.75);
-
-      opacity: 0;
-
-      pointer-events: none;
-
-      padding:
-        13px
-        22px;
-
-      border-radius: 18px;
-
-      color: #fff;
-
-      background:
-        rgba(0,0,0,.72);
-
-      border:
-        1px solid
-        rgba(0,220,255,.35);
-
-      backdrop-filter:
-        blur(15px);
-
-      -webkit-backdrop-filter:
-        blur(15px);
-
-      font-family:
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        sans-serif;
-
-      font-size: 16px;
-
-      font-weight: 800;
-
-      transition:
-        opacity .35s ease,
-        transform .35s ease;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
     }
 
-
-    #found-ui.show {
-
-      opacity: 1;
-
-      transform:
-        translate(-50%, -50%)
-        scale(1);
+    #sound-button.visible {
+        display: flex;
     }
 
-
-    /* =========================================================
-       SOUND BUTTON
-    ========================================================= */
-
-    #sound-toggle {
-
-      position: fixed;
-
-      top:
-        max(
-          20px,
-          env(safe-area-inset-top)
-        );
-
-      right: 18px;
-
-      z-index: 15000;
-
-      width: 48px;
-      height: 48px;
-
-      display: none;
-
-      align-items: center;
-      justify-content: center;
-
-      border-radius: 50%;
-
-      background:
-        rgba(0,0,0,.62);
-
-      border:
-        1px solid
-        rgba(255,255,255,.18);
-
-      backdrop-filter:
-        blur(12px);
-
-      -webkit-backdrop-filter:
-        blur(12px);
-
-      color: #fff;
-
-      font-size: 21px;
+    #error {
+        position: fixed;
+        z-index: 10000;
+        inset: auto 15px 20px 15px;
+        display: none;
+        padding: 15px;
+        border-radius: 15px;
+        background: rgba(150,0,0,.9);
+        color: white;
+        font-size: 14px;
+        text-align: center;
     }
-
-
-    #sound-toggle.active {
-
-      display: flex;
-    }
-
-
-    /* =========================================================
-       BOTTOM STATUS
-    ========================================================= */
-
-    #bottom-ui {
-
-      position: fixed;
-
-      left: 50%;
-
-      bottom:
-        max(
-          20px,
-          env(safe-area-inset-bottom)
-        );
-
-      transform:
-        translateX(-50%);
-
-      z-index: 9000;
-
-      color: #fff;
-
-      font-family:
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        sans-serif;
-
-      font-size: 12px;
-
-      opacity: .55;
-
-      text-align: center;
-
-      pointer-events: none;
-
-      white-space: nowrap;
-    }
-
-
-    /* =========================================================
-       VIDEO CONTROLS HINT
-    ========================================================= */
-
-    #gesture-hint {
-
-      position: fixed;
-
-      left: 50%;
-
-      bottom:
-        max(
-          55px,
-          calc(env(safe-area-inset-bottom) + 35px)
-        );
-
-      transform:
-        translateX(-50%);
-
-      z-index: 9000;
-
-      color: #fff;
-
-      background:
-        rgba(0,0,0,.55);
-
-      border-radius: 20px;
-
-      padding:
-        8px
-        14px;
-
-      font-size: 12px;
-
-      font-family:
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        sans-serif;
-
-      opacity: 0;
-
-      pointer-events: none;
-
-      transition:
-        opacity .4s ease;
-    }
-
-
-    #gesture-hint.show {
-
-      opacity: .7;
-    }
-
-
-    /* =========================================================
-       A-FRAME CANVAS
-    ========================================================= */
-
-    canvas.a-canvas {
-
-      position: fixed !important;
-
-      inset: 0 !important;
-
-      width: 100% !important;
-
-      height: 100% !important;
-    }
-
-  </style>
+</style>
 </head>
 
+<body>
 
-<body oncontextmenu="return false;">
+<!-- Стартовий екран потрібен тільки для першого user gesture -->
+<div id="start-screen">
+    <div class="start-box">
+        <div class="start-title">AR Video</div>
 
+        <div class="start-text">
+            Наведи камеру на фотографію,<br>
+            щоб запустити відео.
+        </div>
 
-  <!-- =========================================================
-       START
-  ========================================================== -->
-
-  <div id="start-overlay">
-
-    <div id="start-logo">
-      ✦
+        <button id="start-button">
+            Розпочати
+        </button>
     </div>
+</div>
 
-    <div id="start-title">
-      Ultimate AR
-    </div>
-
-    <div id="start-subtitle">
-      Наведіть камеру на фотографію
-      та оживіть її за допомогою AR
-    </div>
-
-    <button id="start-btn">
-      Запустити AR
-    </button>
-
-    <div id="start-hint">
-      Потрібен доступ до камери
-    </div>
-
-  </div>
-
-
-  <!-- =========================================================
-       SCAN
-  ========================================================== -->
-
-  <div id="scan-ui">
-
-    <span id="scan-dot"></span>
-
+<div id="status">
     Наведіть камеру на фотографію
+</div>
 
-  </div>
-
-
-  <!-- =========================================================
-       FOUND
-  ========================================================== -->
-
-  <div id="found-ui">
-    ✦ Фото знайдено
-  </div>
-
-
-  <!-- =========================================================
-       SOUND
-  ========================================================== -->
-
-  <button id="sound-toggle">
+<button id="sound-button">
     🔇
-  </button>
+</button>
 
+<div id="error"></div>
 
-  <!-- =========================================================
-       BOTTOM
-  ========================================================== -->
-
-  <div id="gesture-hint">
-    👆 Тап — пауза • Два пальці — масштаб
-  </div>
-
-
-  <div id="bottom-ui">
-    AR Image Tracking
-  </div>
-
-
-  <!-- =========================================================
-       AR SCENE
-  ========================================================== -->
-
-  <a-scene
-
+<a-scene
     id="ar-scene"
 
-    mindar-image="
-      imageTargetSrc: targets.mind;
-
-      filterMinCF: 0.0001;
-      filterBeta: 0.001;
-
-      warmupTolerance: 4;
-      missTolerance: 10;
-    "
-
-    color-space="sRGB"
+    embedded
 
     renderer="
-      colorManagement: true;
-      physicallyCorrectLights: false;
-      antialias: true;
-      precision: highp;
-      logarithmicDepthBuffer: true;
+        colorManagement: true;
+        physicallyCorrectLights: false;
+        antialias: true;
+        alpha: true;
     "
 
     vr-mode-ui="enabled: false"
 
     device-orientation-permission-ui="enabled: false"
 
-    embedded
+    mindar-image="
+        imageTargetSrc: targets.mind;
 
-  >
+        filterMinCF: 0.0001;
+        filterBeta: 0.001;
 
+        warmupTolerance: 3;
+        missTolerance: 8;
 
-    <!-- =======================================================
-         ASSETS
-    ======================================================== -->
+        uiLoading: no;
+        uiScanning: no;
+        uiError: no;
+    "
+>
 
-    <a-assets timeout="15000">
+    <a-assets>
 
-      <video
+        <video
+            id="my-video"
 
-        id="my-video"
+            src="https://files.catbox.moe/y5fotd.mp4"
 
-        src="https://files.catbox.moe/y5fotd.mp4"
+            preload="auto"
 
-        preload="auto"
+            playsinline
+            webkit-playsinline
 
-        crossorigin="anonymous"
+            crossorigin="anonymous"
 
-        playsinline
-
-        webkit-playsinline
-
-        loop
-
-        muted
-
-      ></video>
+            muted
+            loop
+        ></video>
 
     </a-assets>
 
 
-    <!-- =======================================================
-         CAMERA
-    ======================================================== -->
-
+    <!--
+        КАМЕРА.
+        Нічого вручну не стартуємо.
+        MindAR сам керує камерою.
+    -->
     <a-camera
-
-      id="main-camera"
-
-      position="0 0 0"
-
-      look-controls="enabled: false"
-
-      wasd-controls="enabled: false"
-
+        id="main-camera"
+        position="0 0 0"
+        look-controls="enabled: false"
+        wasd-controls="enabled: false"
     ></a-camera>
 
 
-    <!-- =======================================================
-         IMAGE TARGET
-    ======================================================== -->
-
+    <!--
+        ГОЛОВНЕ:
+        target-entity отримує реальну 3D-позицію
+        та 3D-поворот знайденої фотографії.
+    -->
     <a-entity
-
-      id="target-entity"
-
-      mindar-image-target="targetIndex: 0"
-
+        id="target-entity"
+        mindar-image-target="targetIndex: 0"
     >
 
+        <!--
+            ВІДЕО Є 3D-ПЛОЩИНОЮ.
 
-      <!-- =====================================================
-           GLOW BACKGROUND
-      ====================================================== -->
+            Воно НЕ є HTML-overlay.
+            Воно НЕ приклеєне до екрана.
 
-      <a-plane
+            Воно є дочірнім елементом target-entity,
+            тому трансформація фотографії автоматично
+            передається відео.
+        -->
+        <a-plane
+            id="video-plane"
 
-        id="glow-plane"
+            src="#my-video"
 
-        position="0 0 -0.012"
+            position="0 0 0"
 
-        width=".79"
+            rotation="0 0 0"
 
-        height="1.37"
+            width="0.75"
+            height="1.33"
 
-        material="
-          shader: flat;
-          color: #00c6ff;
-          transparent: true;
-          opacity: 0;
-        "
+            material="
+                shader: flat;
+                transparent: true;
+                opacity: 0;
+                side: double;
+            "
 
-        animation__scale="
-          property: scale;
-          from: 0.94 0.94 0.94;
-          to: 1.06 1.06 1.06;
-          dur: 1400;
-          dir: alternate;
-          loop: true;
-          easing: easeInOutSine;
-        "
-
-      ></a-plane>
-
-
-      <!-- =====================================================
-           VIDEO PLANE
-      ====================================================== -->
-
-      <a-plane
-
-        id="video-plane"
-
-        src="#my-video"
-
-        position="0 0 0"
-
-        width="0.75"
-
-        height="1.33"
-
-        rotation="0 0 0"
-
-        scale="1 1 1"
-
-        material="
-          shader: flat;
-          transparent: true;
-          opacity: 0;
-          side: double;
-        "
-
-        visible="false"
-
-      ></a-plane>
-
-
-      <!-- =====================================================
-           BORDER
-      ====================================================== -->
-
-      <a-plane
-
-        id="border-plane"
-
-        position="0 0 0.008"
-
-        width="0.765"
-
-        height="1.345"
-
-        material="
-          shader: flat;
-          color: #00c6ff;
-          transparent: true;
-          opacity: 0;
-          wireframe: true;
-        "
-
-      ></a-plane>
-
-
-      <!-- =====================================================
-           CENTER LIGHT
-      ====================================================== -->
-
-      <a-ring
-
-        id="center-ring"
-
-        position="0 0 0.012"
-
-        radius-inner="0.02"
-
-        radius-outer="0.035"
-
-        rotation="0 0 0"
-
-        material="
-          shader: flat;
-          color: #ffffff;
-          transparent: true;
-          opacity: 0;
-        "
-
-        animation="
-          property: scale;
-          from: .8 .8 .8;
-          to: 1.8 1.8 1.8;
-          dur: 1100;
-          loop: true;
-          easing: easeOutQuad;
-        "
-
-      ></a-ring>
-
+            visible="false"
+        ></a-plane>
 
     </a-entity>
 
-  </a-scene>
+</a-scene>
 
 
-  <!-- =========================================================
-       JAVASCRIPT
-  ========================================================== -->
+<script>
+(function () {
 
-  <script>
+    "use strict";
 
-    /* =========================================================
-       ELEMENTS
-    ========================================================= */
 
     const scene =
-      document.querySelector("#ar-scene");
-
-    const overlay =
-      document.querySelector("#start-overlay");
-
-    const startButton =
-      document.querySelector("#start-btn");
-
-    const target =
-      document.querySelector("#target-entity");
+        document.getElementById("ar-scene");
 
     const video =
-      document.querySelector("#my-video");
+        document.getElementById("my-video");
+
+    const target =
+        document.getElementById("target-entity");
 
     const videoPlane =
-      document.querySelector("#video-plane");
+        document.getElementById("video-plane");
 
-    const glowPlane =
-      document.querySelector("#glow-plane");
+    const startScreen =
+        document.getElementById("start-screen");
 
-    const borderPlane =
-      document.querySelector("#border-plane");
+    const startButton =
+        document.getElementById("start-button");
 
-    const centerRing =
-      document.querySelector("#center-ring");
-
-    const scanUI =
-      document.querySelector("#scan-ui");
-
-    const foundUI =
-      document.querySelector("#found-ui");
+    const status =
+        document.getElementById("status");
 
     const soundButton =
-      document.querySelector("#sound-toggle");
+        document.getElementById("sound-button");
 
-    const gestureHint =
-      document.querySelector("#gesture-hint");
+    const errorBox =
+        document.getElementById("error");
 
-
-    /* =========================================================
-       STATE
-    ========================================================= */
 
     let started = false;
-
     let targetVisible = false;
-
-    let userMuted = true;
-
-    let fadeAnimation = null;
-
-    let scaleValue = 1;
-
-    let initialDistance = 0;
-
-    let initialScale = 1;
-
-    let touchStartTime = 0;
+    let fadeTimer = null;
 
 
-    /* =========================================================
-       UTILITY
-    ========================================================= */
+    function showStatus(text) {
 
-    function clamp(
-      value,
-      min,
-      max
-    ) {
-
-      return Math.max(
-        min,
-        Math.min(max, value)
-      );
-    }
-
-
-    /* =========================================================
-       MATERIAL OPACITY
-    ========================================================= */
-
-    function setOpacity(
-      entity,
-      opacity
-    ) {
-
-      if (!entity)
-        return;
-
-      entity.setAttribute(
-        "material",
-        "opacity",
-        opacity
-      );
-    }
-
-
-    /* =========================================================
-       SMOOTH FADE
-    ========================================================= */
-
-    function fadePlane(
-      entity,
-      targetOpacity,
-      duration = 600,
-      callback
-    ) {
-
-      if (!entity)
-        return;
-
-      if (fadeAnimation)
-        cancelAnimationFrame(
-          fadeAnimation
-        );
-
-
-      const material =
-        entity.components.material &&
-        entity.components.material.material;
-
-
-      if (!material)
-        return;
-
-
-      const startOpacity =
-        material.opacity;
-
-
-      const startTime =
-        performance.now();
-
-
-      function animate(
-        currentTime
-      ) {
-
-        const elapsed =
-          currentTime - startTime;
-
-
-        const progress =
-          clamp(
-            elapsed / duration,
-            0,
-            1
-          );
-
-
-        const eased =
-          progress < 0.5
-
-            ? 2 * progress * progress
-
-            : 1 -
-              Math.pow(
-                -2 * progress + 2,
-                2
-              ) / 2;
-
-
-        const opacity =
-          startOpacity +
-          (
-            targetOpacity -
-            startOpacity
-          ) *
-          eased;
-
-
-        material.opacity =
-          opacity;
-
-
-        if (progress < 1) {
-
-          fadeAnimation =
-            requestAnimationFrame(
-              animate
-            );
-
-        } else {
-
-          fadeAnimation = null;
-
-          if (callback)
-            callback();
-
-        }
-
-      }
-
-
-      fadeAnimation =
-        requestAnimationFrame(
-          animate
-        );
+        status.textContent = text;
+        status.classList.add("show");
 
     }
 
 
-    /* =========================================================
-       SHOW SCAN
-    ========================================================= */
+    function hideStatus() {
 
-    function showScanner() {
-
-      scanUI.classList.add(
-        "visible"
-      );
+        status.classList.remove("show");
 
     }
 
 
-    function hideScanner() {
+    function showError(text) {
 
-      scanUI.classList.remove(
-        "visible"
-      );
-
-    }
-
-
-    /* =========================================================
-       FOUND MESSAGE
-    ========================================================= */
-
-    function showFoundMessage() {
-
-      foundUI.classList.add(
-        "show"
-      );
-
-
-      setTimeout(() => {
-
-        foundUI.classList.remove(
-          "show"
-        );
-
-      }, 900);
+        errorBox.textContent = text;
+        errorBox.style.display = "block";
 
     }
 
 
-    /* =========================================================
-       START AR
-    ========================================================= */
+    function fadeVideoIn() {
 
-    startButton.addEventListener(
-      "click",
-      async () => {
-
-        if (started)
-          return;
-
-
-        started = true;
-
-
-        overlay.classList.add(
-          "hidden"
-        );
-
-
-        soundButton.classList.add(
-          "active"
-        );
-
-
-        showScanner();
-
-
-        /*
-          Розблоковуємо відео для Safari/iOS.
-        */
-
-        video.muted = true;
-
-        video.playsInline = true;
-
-
-        try {
-
-          await video.play();
-
-          video.pause();
-
-          video.currentTime = 0;
-
-        } catch (error) {
-
-          console.log(
-            "Video unlock:",
-            error
-          );
-
-        }
-
-
-        /*
-          Показуємо підказку.
-        */
-
-        setTimeout(() => {
-
-          gestureHint.classList.add(
-            "show"
-          );
-
-        }, 2500);
-
-
-        setTimeout(() => {
-
-          gestureHint.classList.remove(
-            "show"
-          );
-
-        }, 6500);
-
-      }
-    );
-
-
-    /* =========================================================
-       SOUND
-    ========================================================= */
-
-    soundButton.addEventListener(
-      "click",
-      async (event) => {
-
-        event.preventDefault();
-
-        event.stopPropagation();
-
-
-        userMuted =
-          !userMuted;
-
-
-        video.muted =
-          userMuted;
-
-
-        soundButton.textContent =
-          userMuted
-            ? "🔇"
-            : "🔊";
-
-
-        if (
-          targetVisible &&
-          video.paused
-        ) {
-
-          try {
-
-            await video.play();
-
-          } catch (error) {
-
-            console.log(
-              "Audio play error:",
-              error
-            );
-
-          }
-
-        }
-
-      }
-    );
-
-
-    /* =========================================================
-       TARGET FOUND
-    ========================================================= */
-
-    target.addEventListener(
-      "targetFound",
-      async () => {
-
-        if (!started)
-          return;
-
-
-        targetVisible = true;
-
-
-        hideScanner();
-
-
-        showFoundMessage();
-
-
-        /*
-          Вмикаємо відео.
-        */
-
-        video.muted =
-          userMuted;
-
-
-        try {
-
-          await video.play();
-
-        } catch (error) {
-
-          console.log(
-            "Play error:",
-            error
-          );
-
-        }
-
-
-        /*
-          Робимо площину видимою.
-        */
+        clearInterval(fadeTimer);
 
         videoPlane.setAttribute(
-          "visible",
-          "true"
+            "visible",
+            true
         );
 
+        let opacity = 0;
 
-        /*
-          Відео.
-        */
+        fadeTimer = setInterval(function () {
 
-        fadePlane(
-          videoPlane,
-          1,
-          750
-        );
+            opacity += 0.08;
 
+            if (opacity >= 1) {
 
-        /*
-          Glow.
-        */
-
-        setOpacity(
-          glowPlane,
-          0
-        );
-
-
-        glowPlane.setAttribute(
-          "visible",
-          "true"
-        );
-
-
-        fadePlane(
-          glowPlane,
-          .12,
-          900
-        );
-
-
-        /*
-          Border.
-        */
-
-        borderPlane.setAttribute(
-          "visible",
-          "true"
-        );
-
-
-        fadePlane(
-          borderPlane,
-          .55,
-          650
-        );
-
-
-        /*
-          Center ring.
-        */
-
-        centerRing.setAttribute(
-          "visible",
-          "true"
-        );
-
-
-        fadePlane(
-          centerRing,
-          .9,
-          450
-        );
-
-      }
-    );
-
-
-    /* =========================================================
-       TARGET LOST
-    ========================================================= */
-
-    target.addEventListener(
-      "targetLost",
-      () => {
-
-        if (!started)
-          return;
-
-
-        targetVisible = false;
-
-
-        showScanner();
-
-
-        /*
-          Плавно прибираємо
-          відео та ефекти.
-        */
-
-        fadePlane(
-          videoPlane,
-          0,
-          450,
-          () => {
-
-            if (!targetVisible) {
-
-              videoPlane.setAttribute(
-                "visible",
-                "false"
-              );
+                opacity = 1;
+                clearInterval(fadeTimer);
 
             }
 
-          }
-        );
+            videoPlane.setAttribute(
+                "material",
+                "opacity",
+                opacity
+            );
+
+        }, 20);
+    }
 
 
-        fadePlane(
-          glowPlane,
-          0,
-          400
-        );
+    function fadeVideoOut() {
+
+        clearInterval(fadeTimer);
+
+        let opacity = 1;
+
+        fadeTimer = setInterval(function () {
+
+            opacity -= 0.1;
+
+            if (opacity <= 0) {
+
+                opacity = 0;
+
+                clearInterval(fadeTimer);
+
+                videoPlane.setAttribute(
+                    "visible",
+                    false
+                );
+            }
+
+            videoPlane.setAttribute(
+                "material",
+                "opacity",
+                opacity
+            );
+
+        }, 20);
+    }
 
 
-        fadePlane(
-          borderPlane,
-          0,
-          300
-        );
+    /*
+     * ПЕРШИЙ USER GESTURE
+     *
+     * Тут ми НЕ запускаємо MindAR вручну.
+     * Це важливо.
+     *
+     * Ми лише розблоковуємо HTML5 video.
+     */
+    startButton.addEventListener(
+        "click",
+        async function () {
+
+            try {
+
+                video.muted = true;
+
+                video.currentTime = 0;
+
+                await video.play();
+
+                video.pause();
+
+                started = true;
+
+                startScreen.classList.add("hidden");
+
+                showStatus(
+                    "Наведіть камеру на фотографію"
+                );
+
+                soundButton.classList.add(
+                    "visible"
+                );
+
+                setTimeout(function () {
+
+                    startScreen.style.display =
+                        "none";
+
+                }, 400);
 
 
-        fadePlane(
-          centerRing,
-          0,
-          250
-        );
+            } catch (error) {
 
+                console.error(
+                    "Video unlock error:",
+                    error
+                );
 
-        /*
-          Не перемотуємо відео.
-          Воно продовжить з того місця,
-          де було втрачено.
-        */
+                started = true;
 
-        video.pause();
+                startScreen.classList.add(
+                    "hidden"
+                );
 
-      }
+                soundButton.classList.add(
+                    "visible"
+                );
+
+                setTimeout(function () {
+
+                    startScreen.style.display =
+                        "none";
+
+                }, 400);
+
+            }
+
+        },
+        {
+            once: true
+        }
     );
 
 
-    /* =========================================================
-       TOUCH — TAP = PLAY / PAUSE
-    ========================================================= */
+    /*
+     * ЗНАЙДЕНА ФОТОГРАФІЯ
+     */
+    target.addEventListener(
+        "targetFound",
+        async function () {
 
-    window.addEventListener(
-      "touchstart",
-      event => {
+            targetVisible = true;
 
-        if (
-          event.target.closest(
-            "#sound-toggle"
-          )
-        )
-          return;
+            hideStatus();
 
-
-        if (
-          event.touches.length === 1
-        ) {
-
-          touchStartTime =
-            Date.now();
-
-        }
-
-
-        if (
-          event.touches.length === 2
-        ) {
-
-          const dx =
-            event.touches[0].clientX -
-            event.touches[1].clientX;
-
-
-          const dy =
-            event.touches[0].clientY -
-            event.touches[1].clientY;
-
-
-          initialDistance =
-            Math.hypot(
-              dx,
-              dy
+            videoPlane.setAttribute(
+                "visible",
+                true
             );
 
 
-          initialScale =
-            scaleValue;
+            /*
+             * Відео завжди відтворюється
+             * саме на 3D-площині target.
+             */
+            try {
 
-        }
+                await video.play();
 
-      },
-      {
-        passive: false
-      }
-    );
+            } catch (error) {
 
-
-    /* =========================================================
-       TOUCH — PINCH ZOOM
-    ========================================================= */
-
-    window.addEventListener(
-      "touchmove",
-      event => {
-
-        if (
-          event.touches.length !== 2
-        )
-          return;
-
-
-        event.preventDefault();
-
-
-        const dx =
-          event.touches[0].clientX -
-          event.touches[1].clientX;
-
-
-        const dy =
-          event.touches[0].clientY -
-          event.touches[1].clientY;
-
-
-        const distance =
-          Math.hypot(
-            dx,
-            dy
-          );
-
-
-        if (
-          initialDistance <= 0
-        )
-          return;
-
-
-        const factor =
-          distance /
-          initialDistance;
-
-
-        scaleValue =
-          clamp(
-            initialScale *
-            factor,
-            .6,
-            2.5
-          );
-
-
-        /*
-          Масштабування
-          самої AR-площини.
-
-          Важливо:
-          вона все одно залишається
-          дочірнім об'єктом target,
-          тому нахил/поворот телефона
-          продовжує коректно працювати.
-        */
-
-        videoPlane.object3D.scale.set(
-          scaleValue,
-          scaleValue,
-          scaleValue
-        );
-
-      },
-      {
-        passive: false
-      }
-    );
-
-
-    /* =========================================================
-       TOUCH END
-    ========================================================= */
-
-    window.addEventListener(
-      "touchend",
-      event => {
-
-        if (
-          event.target.closest(
-            "#sound-toggle"
-          )
-        )
-          return;
-
-
-        /*
-          Якщо це був одиночний
-          короткий тап.
-        */
-
-        if (
-          event.touches.length === 0 &&
-          event.changedTouches.length === 1
-        ) {
-
-          const duration =
-            Date.now() -
-            touchStartTime;
-
-
-          if (
-            duration < 280 &&
-            targetVisible
-          ) {
-
-            if (
-              video.paused
-            ) {
-
-              video.muted =
-                userMuted;
-
-
-              video.play()
-                .catch(
-                  console.log
+                console.warn(
+                    "Video play:",
+                    error
                 );
-
-            } else {
-
-              video.pause();
 
             }
 
-          }
+
+            fadeVideoIn();
 
         }
-
-      }
     );
 
 
-    /* =========================================================
-       PREVENT DOUBLE TAP ZOOM
-    ========================================================= */
+    /*
+     * ФОТОГРАФІЯ ВТРАЧЕНА
+     */
+    target.addEventListener(
+        "targetLost",
+        function () {
 
-    let lastTap = 0;
+            targetVisible = false;
 
-
-    document.addEventListener(
-      "touchend",
-      event => {
-
-        const now =
-          Date.now();
-
-
-        if (
-          now - lastTap < 300
-        ) {
-
-          event.preventDefault();
-
-        }
-
-
-        lastTap = now;
-
-      },
-      {
-        passive: false
-      }
-    );
-
-
-    /* =========================================================
-       VISIBILITY CHANGE
-    ========================================================= */
-
-    document.addEventListener(
-      "visibilitychange",
-      () => {
-
-        if (
-          document.hidden
-        ) {
-
-          if (
-            !video.paused
-          ) {
+            fadeVideoOut();
 
             video.pause();
 
-          }
+            showStatus(
+                "Наведіть камеру на фотографію"
+            );
 
         }
-
-      }
     );
 
 
-    /* =========================================================
-       PAGE SHOW
-    ========================================================= */
+    /*
+     * КНОПКА ЗВУКУ
+     */
+    soundButton.addEventListener(
+        "click",
+        async function () {
 
-    window.addEventListener(
-      "pageshow",
-      () => {
+            if (video.muted) {
 
-        if (
-          targetVisible
-        ) {
+                video.muted = false;
 
-          video.muted =
-            userMuted;
+                soundButton.textContent =
+                    "🔊";
+
+                try {
+
+                    await video.play();
+
+                } catch (error) {
+
+                    console.warn(error);
+
+                }
+
+            } else {
+
+                video.muted = true;
+
+                soundButton.textContent =
+                    "🔇";
+            }
 
         }
-
-      }
     );
 
 
-    /* =========================================================
-       VIDEO ERROR
-    ========================================================= */
-
+    /*
+     * Якщо відео закінчиться — воно почнеться
+     * з початку. loop також встановлений,
+     * це додаткова страховка.
+     */
     video.addEventListener(
-      "error",
-      () => {
+        "ended",
+        function () {
 
-        console.error(
-          "Не вдалося завантажити відео."
-        );
+            video.currentTime = 0;
 
-      }
+            if (targetVisible) {
+
+                video.play().catch(
+                    function () {}
+                );
+
+            }
+
+        }
     );
 
 
-    /* =========================================================
-       VIDEO LOADED
-    ========================================================= */
+    /*
+     * Помилки MindAR / A-Frame
+     */
+    scene.addEventListener(
+        "arError",
+        function (event) {
 
-    video.addEventListener(
-      "loadeddata",
-      () => {
+            console.error(
+                "AR ERROR:",
+                event
+            );
 
-        console.log(
-          "AR Video loaded."
-        );
+            showError(
+                "Не вдалося запустити камеру. Перевірте дозвіл на камеру та HTTPS."
+            );
 
-      }
+        }
     );
 
 
-    /* =========================================================
-       DEBUG
-    ========================================================= */
+    scene.addEventListener(
+        "renderstart",
+        function () {
 
-    console.log(
-      "%cUltimate AR initialized",
-      "font-size:18px;font-weight:bold;"
+            console.log(
+                "A-Frame render started"
+            );
+
+        }
     );
 
-  </script>
+
+    /*
+     * ВАЖЛИВО:
+     *
+     * Тут НІЯКОГО:
+     *
+     * scene.systems["mindar-image-system"].start()
+     *
+     * MindAR запускає камеру сам через компонент
+     * mindar-image.
+     */
+
+})();
+</script>
 
 </body>
 </html>
-```
