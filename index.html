@@ -16,8 +16,7 @@
       width: 100%; height: 100%;
       overflow: hidden;
       background: transparent !important;
-      position: fixed;
-      inset: 0;
+      position: fixed; inset: 0;
       -webkit-tap-highlight-color: transparent;
     }
 
@@ -30,7 +29,6 @@
       background: transparent !important;
     }
 
-    /* Камера MindAR — на весь екран, під canvas */
     video.mindar-video,
     .mindar-video-container video,
     #ar-camera-video {
@@ -43,7 +41,6 @@
       background: #000;
     }
 
-    /* === ЗАВАНТАЖЕННЯ === */
     #loading {
       position: fixed; inset: 0;
       background: #0a0a0a;
@@ -62,9 +59,8 @@
       margin-bottom: 18px;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
-    #loading p { font-size: 14px; opacity: 0.7; letter-spacing: 0.5px; }
+    #loading p { font-size: 14px; opacity: 0.7; }
 
-    /* === КНОПКА СТАРТУ — мінімалістична, в стилі AR === */
     #start-overlay {
       position: fixed; inset: 0;
       background: radial-gradient(circle at 50% 60%, #1a1a2e 0%, #0a0a0a 100%);
@@ -74,61 +70,35 @@
       transition: opacity 0.5s ease;
     }
     #start-overlay.hidden { opacity: 0; pointer-events: none; }
-
     #start-overlay h1 {
-      color: #fff;
-      font-size: 22px;
-      font-weight: 600;
-      margin: 0 0 8px;
-      letter-spacing: 0.5px;
-      text-align: center;
-      padding: 0 24px;
+      color: #fff; font-size: 22px; font-weight: 600;
+      margin: 0 0 8px; text-align: center; padding: 0 24px;
     }
     #start-overlay p {
-      color: rgba(255,255,255,0.55);
-      font-size: 14px;
-      margin: 0 0 32px;
-      text-align: center;
-      padding: 0 32px;
+      color: rgba(255,255,255,0.55); font-size: 14px;
+      margin: 0 0 32px; text-align: center; padding: 0 32px;
       line-height: 1.5;
     }
-
     #start-btn {
-      padding: 16px 44px;
-      border: none;
-      border-radius: 50px;
+      padding: 16px 44px; border: none; border-radius: 50px;
       background: linear-gradient(135deg, #6c63ff, #a855f7);
-      color: #fff;
-      font-size: 16px;
-      font-weight: 600;
-      letter-spacing: 0.3px;
+      color: #fff; font-size: 16px; font-weight: 600;
       box-shadow: 0 8px 32px rgba(108, 99, 255, 0.5);
       cursor: pointer;
-      transition: transform 0.15s ease;
     }
     #start-btn:active { transform: scale(0.95); }
-
     #start-overlay .hint {
-      margin-top: 22px;
-      color: rgba(255,255,255,0.35);
-      font-size: 12px;
+      margin-top: 22px; color: rgba(255,255,255,0.35); font-size: 12px;
     }
 
     #error-msg {
       position: fixed;
       bottom: calc(30px + env(safe-area-inset-bottom));
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(220, 38, 38, 0.95);
-      color: #fff;
-      padding: 12px 22px;
-      border-radius: 12px;
-      font-size: 13px;
-      z-index: 10001;
-      display: none;
-      max-width: 85%;
-      text-align: center;
-      line-height: 1.4;
+      left: 50%; transform: translateX(-50%);
+      background: rgba(220, 38, 38, 0.95); color: #fff;
+      padding: 12px 22px; border-radius: 12px;
+      font-size: 13px; z-index: 10001;
+      display: none; max-width: 85%; text-align: center;
     }
     #error-msg.show { display: block; }
   </style>
@@ -140,7 +110,6 @@
     <p>Завантаження AR…</p>
   </div>
 
-  <!-- Екран старту: один клік — і камера + звук увімкнені -->
   <div id="start-overlay" class="hidden">
     <h1>AR Фотоальбом</h1>
     <p>Наведіть камеру на фотографію — вона оживе</p>
@@ -151,51 +120,175 @@
   <div id="error-msg"></div>
 
   <a-scene
-    mindar-image="imageTargetSrc: ./targets.mind; uiLoading: no; uiScanning: no; uiError: no; maxTrack: 1;"
+    mindar-image="imageTargetSrc: ./targets.mind; uiLoading: no; uiScanning: no; uiError: no; maxTrack: 1; filterMinCF: 0.0001; filterBeta: 0.001; warmupTolerance: 5; missTolerance: 5;"
     vr-mode-ui="enabled: false"
     device-orientation-permission-ui="enabled: false"
     color-space="sRGB"
-    renderer="alpha: true; colorManagement: true; antialias: true;"
+    renderer="alpha: true; colorManagement: true; antialias: true; sortObjects: false;"
     embedded
   >
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
     <a-entity mindar-image-target="targetIndex: 0">
       <!--
-        Відео центрується на таргеті. Розмір (width/height)
-        підлаштовується через JS після завантаження метаданих відео.
+        Використовуємо a-plane + ВЛАСНИЙ компонент ar-video-texture,
+        який гарантовано оновлює текстуру на iOS Safari.
+        Розмір площини підлаштовується під пропорції відео.
       -->
-      <a-video
+      <a-plane
         id="ar-video-plane"
-        src="#ar-video"
-        position="0 0 0.001"
+        ar-video-texture="src: https://files.catbox.moe/y5fotd.mp4"
+        position="0 0 0"
         width="1"
         height="1"
         rotation="0 0 0"
-        loop="true"
-        material="shader: flat; opacity: 1; side: double; transparent: true;"
-      ></a-video>
+        material="shader: flat; transparent: true; opacity: 1; side: double;"
+      ></a-plane>
     </a-entity>
   </a-scene>
 
-  <!-- Джерело відео — ваше посилання Catbox -->
-  <video
-    id="ar-video"
-    src="https://files.catbox.moe/y5fotd.mp4"
-    preload="auto"
-    playsinline
-    webkit-playsinline
-    loop
-    style="display:none;"
-  ></video>
-
   <script>
+    // ============================================================
+    // КАСТОМНИЙ A-FRAME КОМПОНЕНТ: ar-video-texture
+    // Створює <video>, робить THREE.VideoTexture і оновлює її
+    // вручну — це фіксить чорний квадрат на iOS Safari.
+    // ============================================================
+    AFRAME.registerComponent('ar-video-texture', {
+      schema: {
+        src: { type: 'string' },
+        width: { type: 'number', default: 1 } // базова ширина у світі A-Frame
+      },
+
+      init: function () {
+        const el = this.el;
+        const data = this.data;
+
+        // 1. Створюємо <video> вручну, з усіма потрібними атрибутами для iOS
+        const video = document.createElement('video');
+        video.setAttribute('src', data.src);
+        video.setAttribute('crossorigin', 'anonymous');
+        video.setAttribute('playsinline', '');
+        video.setAttribute('webkit-playsinline', '');
+        video.setAttribute('preload', 'auto');
+        video.setAttribute('loop', '');
+        video.muted = true; // спочатку muted, розблокуємо через кнопку
+        video.style.position = 'absolute';
+        video.style.left = '-9999px';
+        video.style.width = '1px';
+        video.style.height = '1px';
+        document.body.appendChild(video);
+
+        this.video = video;
+
+        // 2. Чекаємо метадані — дізнаємось реальні пропорції відео
+        video.addEventListener('loadedmetadata', () => {
+          const vw = video.videoWidth;
+          const vh = video.videoHeight;
+          if (!vw || !vh) return;
+
+          const aspect = vw / vh;
+
+          // Площина: довша сторона = width зі schema
+          // Наприклад width = 1, тоді:
+          // - якщо відео горизонтальне: w = 1, h = 1/aspect
+          // - якщо вертикальне: w = 1 * aspect, h = 1
+          let planeW, planeH;
+          if (aspect >= 1) {
+            planeW = data.width;
+            planeH = data.width / aspect;
+          } else {
+            planeH = data.width;
+            planeW = data.width * aspect;
+          }
+
+          el.setAttribute('width', planeW);
+          el.setAttribute('height', planeH);
+          console.log(`✅ Пропорції відео: ${vw}x${vh} (aspect ${aspect.toFixed(3)}) → ${planeW.toFixed(3)} x ${planeH.toFixed(3)}`);
+        });
+
+        // 3. Створюємо THREE.VideoTexture і ПРИВ'ЯЗУЄМО до матеріалу A-Frame
+        video.addEventListener('canplay', () => {
+          const mesh = el.getObject3D('mesh');
+          if (!mesh) return;
+
+          const texture = new THREE.VideoTexture(video);
+          texture.minFilter = THREE.LinearFilter;
+          texture.magFilter = THREE.LinearFilter;
+          texture.format = THREE.RGBAFormat;
+          texture.colorSpace = THREE.SRGBColorSpace;
+
+          const material = new THREE.MeshBasicMaterial({
+            map: texture,
+            transparent: true,
+            side: THREE.DoubleSide,
+            toneMapped: false
+          });
+          mesh.material = material;
+
+          this.texture = texture;
+          console.log('✅ VideoTexture прив\'язана до матеріалу');
+
+          // 4. Запускаємо оновлення текстури кожен кадр — ЦЕ ФІКС для iOS
+          this.tick = this.tick.bind(this);
+          el.sceneEl.object3D.add(this._dummyTick());
+        });
+
+        video.addEventListener('error', (e) => {
+          console.error('❌ Помилка відео:', e);
+          showError('Не вдалося завантажити відео. Перевірте посилання.');
+        });
+
+        // 5. Спроба запустити (може бути заблокована до user gesture)
+        video.load();
+      },
+
+      // Хак: A-Frame викликає tick() лише у компонентів, що мають цю функцію
+      _dummyTick: function () {
+        return { tick: () => {} };
+      },
+
+      tick: function () {
+        // Якщо відео грає, THREE.VideoTexture сама оновлюється,
+        // але для iOS Safari потрібно іноді «пінувати» needsUpdate
+        if (this.video && !this.video.paused && this.texture) {
+          this.texture.needsUpdate = true;
+        }
+      },
+
+      // Публічні методи — використаємо в основному скрипті
+      play: async function () {
+        if (!this.video) return;
+        try {
+          await this.video.play();
+        } catch (e) {
+          console.warn('play() blocked:', e);
+        }
+      },
+
+      pause: function () {
+        if (this.video) this.video.pause();
+      },
+
+      unmute: function () {
+        if (this.video) {
+          this.video.muted = false;
+          this.video.volume = 1.0;
+        }
+      },
+
+      isPaused: function () {
+        return !this.video || this.video.paused;
+      }
+    });
+
+    // ============================================================
+    // ОСНОВНА ЛОГІКА
+    // ============================================================
     const loadingEl = document.getElementById('loading');
     const startOverlay = document.getElementById('start-overlay');
-    const startBtn  = document.getElementById('start-btn');
-    const errorMsg  = document.getElementById('error-msg');
-    const sceneEl   = document.querySelector('a-scene');
-    const videoEl   = document.getElementById('ar-video');
+    const startBtn = document.getElementById('start-btn');
+    const errorMsg = document.getElementById('error-msg');
+    const sceneEl = document.querySelector('a-scene');
     const videoPlane = document.getElementById('ar-video-plane');
 
     function showError(msg) {
@@ -204,7 +297,7 @@
       setTimeout(() => errorMsg.classList.remove('show'), 6000);
     }
 
-    // === КРИТИЧНО: прозорий canvas, щоб камера була видна ===
+    // Прозорий canvas
     sceneEl.addEventListener('renderstart', () => {
       loadingEl.classList.add('hidden');
       startOverlay.classList.remove('hidden');
@@ -218,46 +311,21 @@
       console.log('✅ Сцена готова');
     });
 
-    // === Підлаштування пропорцій відео під реальне співвідношення сторін ===
-    videoEl.addEventListener('loadedmetadata', () => {
-      const vw = videoEl.videoWidth;
-      const vh = videoEl.videoHeight;
-      if (!vw || !vh) return;
-
-      const aspect = vw / vh;
-
-      // Робимо так, щоб довша сторона = 1 одиниця A-Frame
-      let w, h;
-      if (aspect >= 1) {
-        // горизонтальне
-        w = 1.0;
-        h = 1.0 / aspect;
-      } else {
-        // вертикальне
-        h = 1.0;
-        w = aspect;
-      }
-
-      videoPlane.setAttribute('width', w);
-      videoPlane.setAttribute('height', h);
-      console.log(`✅ Пропорції відео: ${vw}x${vh} → ${w.toFixed(3)} x ${h.toFixed(3)}`);
-    });
-
-    videoEl.addEventListener('error', () => {
-      showError('Не вдалося завантажити відео. Перевірте посилання.');
-    });
-
-    // === СТАРТ ===
+    // ============================================================
+    // СТАРТ: один клік = камера + звук
+    // ============================================================
     startBtn.addEventListener('click', async () => {
       startOverlay.classList.add('hidden');
 
       try {
         // 1. Розблоковуємо відео зі звуком (у межах user gesture)
-        videoEl.muted = false;
-        videoEl.volume = 1.0;
-        await videoEl.play();
-        videoEl.pause();
-        console.log('✅ Відео розблоковано зі звуком');
+        const videoComponent = videoPlane.components['ar-video-texture'];
+        if (videoComponent) {
+          videoComponent.unmute();
+          await videoComponent.play();
+          videoComponent.pause(); // пауза — гратимемо при знайденні таргету
+          console.log('✅ Відео розблоковано зі звуком');
+        }
 
         // 2. Запускаємо MindAR-камеру
         const arSystem = sceneEl.systems['mindar-image-system'];
@@ -271,28 +339,30 @@
       }
     });
 
-    // === ТРЕКІНГ ===
+    // ============================================================
+    // ТРЕКІНГ
+    // ============================================================
     const targetEl = document.querySelector('[mindar-image-target]');
 
     targetEl.addEventListener('targetFound', async () => {
       console.log('✅ Таргет знайдено');
-      try {
-        if (videoEl.paused) {
-          videoEl.muted = false;
-          await videoEl.play();
-        }
-      } catch (err) {
-        console.warn('play() blocked:', err);
+      const videoComponent = videoPlane.components['ar-video-texture'];
+      if (videoComponent && videoComponent.isPaused()) {
+        await videoComponent.play();
       }
     });
 
     targetEl.addEventListener('targetLost', () => {
       console.log('❌ Таргет втрачено');
-      videoEl.pause();
+      const videoComponent = videoPlane.components['ar-video-texture'];
+      if (videoComponent) videoComponent.pause();
     });
 
     document.addEventListener('visibilitychange', () => {
-      if (document.hidden) videoEl.pause();
+      if (document.hidden) {
+        const videoComponent = videoPlane.components['ar-video-texture'];
+        if (videoComponent) videoComponent.pause();
+      }
     });
   </script>
 </body>
