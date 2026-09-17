@@ -21,7 +21,7 @@
       #start-overlay {
         position: fixed;
         inset: 0;
-        background: rgba(15, 15, 20, 0.85);
+        background: rgba(10, 10, 15, 0.95);
         z-index: 10000;
         display: flex;
         align-items: center;
@@ -30,49 +30,43 @@
         color: white;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         cursor: pointer;
-        transition: opacity 0.4s ease;
-        backdrop-filter: blur(5px);
+        transition: opacity 0.3s ease;
       }
       #start-btn {
-        background: linear-gradient(135deg, #ff416c, #ff4b2b);
+        background: #007aff;
         color: white;
         border: none;
         padding: 16px 32px;
         font-size: 16px;
         font-weight: bold;
         border-radius: 30px;
-        box-shadow: 0 6px 20px rgba(255, 65, 108, 0.4);
+        box-shadow: 0 4px 15px rgba(0, 122, 255, 0.4);
         cursor: pointer;
-        transition: transform 0.2s ease;
-      }
-      #start-btn:active {
-        transform: scale(0.95);
       }
       #start-hint {
         margin-top: 12px;
         font-size: 13px;
-        opacity: 0.7;
+        opacity: 0.6;
       }
 
       #scan-instruction {
         position: fixed;
-        top: max(24px, env(safe-area-inset-top));
+        top: max(20px, env(safe-area-inset-top));
         left: 50%;
         transform: translateX(-50%);
         z-index: 9998;
-        background: rgba(0, 0, 0, 0.75);
+        background: rgba(0, 0, 0, 0.8);
         color: white;
-        padding: 12px 24px;
-        border-radius: 30px;
+        padding: 10px 20px;
+        border-radius: 20px;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         font-size: 14px;
         font-weight: 500;
         pointer-events: none;
-        transition: opacity 0.4s ease, transform 0.4s ease;
         opacity: 0;
-        backdrop-filter: blur(8px);
-        border: 1px solid rgba(255,255,255,0.15);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        transition: opacity 0.3s ease;
+        backdrop-filter: blur(6px);
+        border: 1px solid rgba(255,255,255,0.1);
       }
       #scan-instruction.visible {
         opacity: 1;
@@ -84,21 +78,17 @@
         left: 50%;
         transform: translate(-50%, -50%) scale(0.9);
         z-index: 9999;
-        background: rgba(0, 0, 0, 0.8);
+        background: rgba(0, 0, 0, 0.85);
         color: white;
-        padding: 16px 32px;
-        border-radius: 20px;
+        padding: 14px 28px;
+        border-radius: 16px;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        font-size: 20px;
+        font-size: 18px;
         font-weight: bold;
         pointer-events: none;
         opacity: 0;
         transition: opacity 0.2s ease, transform 0.2s ease;
-        backdrop-filter: blur(10px);
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        backdrop-filter: blur(8px);
       }
       #action-status.show {
         opacity: 1;
@@ -107,39 +97,39 @@
 
       #sound-toggle {
         position: fixed;
-        top: max(20px, env(safe-area-inset-top));
-        right: 20px;
-        z-index: 9999;
-        background: rgba(0, 0, 0, 0.65);
+        top: max(16px, env(safe-area-inset-top));
+        right: 16px;
+        z-index: 19999;
+        background: rgba(0, 0, 0, 0.6);
         color: white;
         border: 1px solid rgba(255, 255, 255, 0.2);
-        width: 48px;
-        height: 48px;
+        width: 44px;
+        height: 44px;
         border-radius: 50%;
         display: none;
         align-items: center;
         justify-content: center;
-        font-size: 22px;
+        font-size: 20px;
         cursor: pointer;
-        backdrop-filter: blur(8px);
-        transition: background 0.2s, transform 0.1s;
-      }
-      #sound-toggle:active {
-        background: rgba(255, 255, 255, 0.3);
-        transform: scale(0.9);
+        backdrop-filter: blur(6px);
       }
 
       #time-badge {
         position: fixed;
-        bottom: max(12px, env(safe-area-inset-bottom));
+        bottom: max(16px, env(safe-area-inset-bottom));
         right: 16px;
-        z-index: 9999;
-        color: rgba(255, 255, 255, 0.8);
+        z-index: 20000;
+        color: #ffffff;
         font-family: monospace;
-        font-size: 13px;
-        font-weight: bold;
+        font-size: 18px;
+        font-weight: 900;
         pointer-events: none;
-        text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+        background: rgba(0, 0, 0, 0.5);
+        padding: 6px 12px;
+        border-radius: 8px;
+        backdrop-filter: blur(6px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        text-shadow: 0 2px 4px rgba(0,0,0,0.9);
       }
     </style>
   </head>
@@ -148,34 +138,30 @@
     
     <div id="start-overlay">
       <button id="start-btn">Торкніться для запуску AR</button>
-      <div id="start-hint">(потрібно для увімкнення звуку та камери)</div>
+      <div id="start-hint">(потрібно для увімкнення камери та звуку)</div>
     </div>
 
-    <div id="scan-instruction">📍 Наведіть камеру на зображення</div>
+    <div id="scan-instruction">📍 Наведіть камеру на фото</div>
     <div id="action-status"></div>
     <div id="sound-toggle">🔇</div>
-    
-    <div id="time-badge">17.09.2026, 08:42:14</div>
+    <div id="time-badge">17.09.2026, 08:54:50</div>
 
-    <a-scene mindar-image="imageTargetSrc: targets.mind; filterMinCF: 0.005; filterBeta: 3000; warmupTolerance: 3; missTolerance: 30;" color-space="sRGB" renderer="colorManagement: true; antialias: false; precision: mediump; physicallyCorrectLights: false;" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
+    <!-- Абсолютно стабільні налаштування фільтрації трекінгу без дребезжання -->
+    <a-scene mindar-image="imageTargetSrc: targets.mind; filterMinCF: 0.00001; filterBeta: 0.001; warmupTolerance: 3; missTolerance: 5;" color-space="sRGB" renderer="colorManagement: true; antialias: true; precision: highp;" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
       
       <a-assets>
-        <video id="my-video" src="https://files.catbox.moe/y5fotd.mp4" preload="auto" response-type="arraybuffer" crossorigin="anonymous" webkit-playsinline playsinline loop muted disablePictureInPicture></video>
+        <video id="my-video" src="https://files.catbox.moe/y5fotd.mp4" preload="auto" crossorigin="anonymous" webkit-playsinline playsinline loop></video>
       </a-assets>
 
       <a-camera id="main-camera" position="0 0 0" look-controls="enabled: false"></a-camera>
 
-      <a-entity mindar-image-target="targetIndex: 0">
-        <!-- Основна відео-площина з ефектом об'ємного виходу вперед -->
-        <a-plane id="video-plane" src="#my-video" position="0 0 0.05" height="1.33" width="0.75" 
+      <!-- Чітка і рівна прив'язка до цілі -->
+      <a-entity id="target-entity" mindar-image-target="targetIndex: 0">
+        <a-plane id="video-plane" src="#my-video" position="0 0 0" height="1.33" width="0.75" 
                  rotation="0 0 0" scale="1 1 1"
-                 material="shader: flat; transparent: true; opacity: 1;">
+                 material="shader: flat; transparent: false; opacity: 1;"
+                 visible="false">
         </a-plane>
-
-        <!-- Ефект 3D-рамки (Pop-out візуальне обрамлення) -->
-        <a-box position="0 0 0.02" width="0.81" height="1.39" depth="0.01" 
-               material="color: #ff416c; emissive: #ff4b2b; emissiveIntensity: 0.5; transparent: true; opacity: 0.8">
-        </a-box>
       </a-entity>
       
     </a-scene>
@@ -183,17 +169,17 @@
     <script>
       const overlay = document.querySelector("#start-overlay");
       const videoElement = document.querySelector("#my-video");
-      const targetEntity = document.querySelector('[mindar-image-target]');
+      const targetEntity = document.querySelector('#target-entity');
       const videoPlane = document.querySelector("#video-plane");
       const scanInstruction = document.querySelector("#scan-instruction");
       const soundToggle = document.querySelector("#sound-toggle");
       const actionStatus = document.querySelector("#action-status");
 
       let isUnlocked = false;
-      let isTargetFound = false;
+      let userMuted = false;
       let statusTimeout = null;
 
-      function showStatus(text, duration = 1200) {
+      function showStatus(text, duration = 1000) {
         actionStatus.textContent = text;
         actionStatus.classList.add("show");
         if (statusTimeout) clearTimeout(statusTimeout);
@@ -204,53 +190,55 @@
         }
       }
 
+      // Ініціалізація по кліку користувача
       overlay.addEventListener("click", () => {
         if (isUnlocked) return;
         isUnlocked = true;
 
-        videoElement.muted = false;
         overlay.style.opacity = "0";
-        setTimeout(() => overlay.style.display = "none", 400);
+        setTimeout(() => overlay.style.display = "none", 300);
 
         scanInstruction.classList.add("visible");
         soundToggle.style.display = "flex";
-        soundToggle.textContent = "🔊";
 
+        // Прогріваємо відео аудіопотік
+        videoElement.muted = true;
         videoElement.play().then(() => {
           videoElement.pause();
           videoElement.currentTime = 0;
-        }).catch(err => console.log("Unlock error:", err));
+        }).catch(err => console.log("Init error:", err));
       });
 
       soundToggle.addEventListener("click", (e) => {
         e.stopPropagation();
         e.preventDefault();
-        videoElement.muted = !videoElement.muted;
-        soundToggle.textContent = videoElement.muted ? "🔇" : "🔊";
+        userMuted = !userMuted;
+        videoElement.muted = userMuted;
+        soundToggle.textContent = userMuted ? "🔇" : "🔊";
       });
 
-      // Поведінка при знаходженні маркера
+      // Жорсткий контроль трекінгу: знайдено -> відтворення + звук (якщо не заглушено)
       targetEntity.addEventListener("targetFound", () => {
         if (!isUnlocked) return;
-        isTargetFound = true;
         scanInstruction.classList.remove("visible");
+        videoPlane.setAttribute("visible", "true");
         
-        // Якщо відео було на паузі через користувача - не чіпаємо, інакше граємо
-        if (videoElement.paused && videoElement.currentTime === 0) {
-          videoElement.play().catch(e => console.log("Play failed:", e));
-        }
+        videoElement.muted = userMuted;
+        videoElement.play().catch(e => console.log("Play error:", e));
       });
       
-      // Поведінка при втраті маркера: ВІДЕО НЕ ЗУПИНЯЄТЬСЯ, а залишається на місці
+      // Втрачено -> моментальна зупинка і вимикання звуку/відео
       targetEntity.addEventListener("targetLost", () => {
         if (!isUnlocked) return;
-        isTargetFound = false;
         scanInstruction.classList.add("visible");
+        videoPlane.setAttribute("visible", "false");
         actionStatus.classList.remove("show");
-        // Відео навмисно НЕ ставиться на паузу, щоб зберігати простір
+        
+        videoElement.pause();
+        videoElement.muted = true; // Захист від фонового звуку в повітрі
       });
 
-      // === ЖЕСТИ (ЗУМ ТА ПАУЗА) ===
+      // === ЖЕСТИ (Плавний зум і пауза) ===
       let initialDistance = 0;
       let baseScale = 1;
       let currentScale = 1;
@@ -291,10 +279,10 @@
 
         if (e.touches.length === 0 && e.changedTouches.length === 1) {
           const touchDuration = Date.now() - touchStartTime;
-          if (touchDuration < 300) {
+          if (touchDuration < 300 && videoPlane.getAttribute('visible') === true) {
             if (videoElement.paused) {
               videoElement.play();
-              showStatus("▶️ Відтворення", 1000);
+              showStatus("▶️ Відтворення");
             } else {
               videoElement.pause();
               showStatus("⏸ Пауза", 0);
