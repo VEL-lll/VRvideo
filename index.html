@@ -1,124 +1,96 @@
-using System.Collections;
-using UnityEngine;
-using UnityEngine.Video;
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Підключаємо A-Frame та AR.js (або MindAR, залежно від твоюї збірки) -->
+    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
 
-[RequireComponent(typeof(VideoPlayer))]
-public class ARVideoPlayerWithFade : MonoBehaviour
-{
-    [Header("Налаштування відео")]
-    [Tooltip("Посилання на відео")]
-    public string videoUrl = "https://files.catbox.moe/gswdrf.mov";
-    public bool loopVideo = true;
+    <style>
+      /* CSS для плавного зникання та появи відео */
+      .fade-video {
+        transition: opacity 0.5s ease-in-out;
+        opacity: 0;
+      }
+      .fade-video.visible {
+        opacity: 1;
+      }
+    </style>
+  </head>
 
-    [Header("Налаштування ефектів")]
-    [Tooltip("Тривалість появи та зникання у секундах")]
-    public float fadeDuration = 0.5f;
+  <body style="margin: 0px; overflow: hidden;">
+    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
+      
+      <!-- Завантаження ресурсів -->
+      <a-assets>
+        <!-- Твоє нове відео -->
+        <video 
+          id="ar-video" 
+          src="https://files.catbox.moe/gswdrf.mov" 
+          preload="auto" 
+          loop="true" 
+          crossorigin="anonymous"
+          playsinline 
+          webkit-playsinline>
+        </video>
+      </a-assets>
 
-    [Tooltip("MeshRenderer плоскості (Quad/Plane), на яку виводиться відео")]
-    public MeshRenderer targetRenderer;
+      <!-- Маркер (заміни patternUrl на свій файл `.patt` або використовуй стандартний hiro) -->
+      <a-marker type="pattern" url="targets/marker.patt" id="marker">
+        <!-- Площина, на яку накладається відео з прозорістю -->
+        <a-video 
+          src="#ar-video" 
+          width="1.6" 
+          height="0.9" 
+          position="0 0 0" 
+          rotation="-90 0 0"
+          material="opacity: 0; transparent: true;">
+        </a-video>
+      </a-marker>
 
-    private VideoPlayer videoPlayer;
-    private Material targetMaterial;
-    private Coroutine fadeCoroutine;
+      <a-entity camera></a-entity>
+    </a-scene>
 
-    void Awake()
-    {
-        videoPlayer = GetComponent<VideoPlayer>();
+    <!-- Скрипт керування відтворенням та анімацією -->
+    <script>
+      const marker = document.querySelector('#marker');
+      const video = document.querySelector('#ar-video');
+      const aVideo = document.querySelector('a-video');
 
-        // Базові налаштування VideoPlayer
-        videoPlayer.source = VideoSource.Url;
-        videoPlayer.url = videoUrl;
-        videoPlayer.playOnAwake = false;
-        videoPlayer.isLooping = loopVideo;
+      let fadeInterval;
 
-        // Пошук MeshRenderer, якщо він не призначений в інспекторі
-        if (targetRenderer == null)
-        {
-            targetRenderer = GetComponent<MeshRenderer>();
-        }
+      // Коли камера знаходить фото-маркер
+      marker.addEventListener('markerFound', () => {
+        video.play();
+        fadeMaterial(aVideo, 0, 1, 500); // Плавна поява за 500 мс
+      });
 
-        if (targetRenderer != null)
-        {
-            targetMaterial = targetRenderer.material;
-            // Робимо об'єкт повністю прозорим на початку
-            SetAlpha(0f);
-        }
+      // Коли камера втрачає фото-маркер
+      marker.addEventListener('markerLost', () => {
+        fadeMaterial(aVideo, 1, 0, 500, () => {
+          video.pause(); // Ставимо на паузу після повного зникання
+        });
+      });
 
-        // Попереднє завантаження відео з мережі
-        videoPlayer.Prepare();
-    }
+      // Функція для зміни прозорості (Fade Effect)
+      function fadeMaterial(element, startOpacity, endOpacity, duration, onComplete) {
+        clearInterval(fadeInterval);
+        const startTime = performance.now();
 
-    // Викликається при виявленні фото-маркера
-    public void OnTrackingFound()
-    {
-        if (fadeCoroutine != null) StopCoroutine(fadeCoroutine);
+        fadeInterval = setInterval(() => {
+          const elapsedTime = performance.now() - startTime;
+          const progress = Math.min(elapsedTime / duration, 1);
+          
+          // Обчислюємо поточну прозорість
+          const currentOpacity = startOpacity + (endOpacity - startOpacity) * progress;
+          element.setAttribute('material', 'opacity', currentOpacity);
 
-        if (videoPlayer.isPrepared)
-        {
-            videoPlayer.Play();
-            fadeCoroutine = StartCoroutine(FadeTo(1f)); // Плавна поява (Fade-In)
-        }
-        else
-        {
-            // Якщо відео ще завантажується, чекаємо і запускаємо з Fade-In
-            videoPlayer.prepareCompleted += PlayAndFadeIn;
-        }
-    }
-
-    // Викликається при втраті фото-маркера
-    public void OnTrackingLost()
-    {
-        videoPlayer.prepareCompleted -= PlayAndFadeIn;
-
-        if (fadeCoroutine != null) StopCoroutine(fadeCoroutine);
-
-        fadeCoroutine = StartCoroutine(FadeOutAndPause()); // Плавне зникання (Fade-Out)
-    }
-
-    private void PlayAndFadeIn(VideoPlayer vp)
-    {
-        vp.Play();
-        vp.prepareCompleted -= PlayAndFadeIn;
-        fadeCoroutine = StartCoroutine(FadeTo(1f));
-    }
-
-    private IEnumerator FadeOutAndPause()
-    {
-        // Чекаємо закінчення ефекту зникання і ставить відео на паузу
-        yield return FadeTo(0f);
-        if (videoPlayer.isPlaying)
-        {
-            videoPlayer.Pause();
-        }
-    }
-
-    // Корутина для плавного змінення прозорості (Альфа-каналу)
-    private IEnumerator FadeTo(float targetAlpha)
-    {
-        if (targetMaterial == null) yield break;
-
-        Color color = targetMaterial.color;
-        float startAlpha = color.a;
-        float time = 0f;
-
-        while (time < fadeDuration)
-        {
-            time += Time.deltaTime;
-            float newAlpha = Mathf.Lerp(startAlpha, targetAlpha, time / fadeDuration);
-            SetAlpha(newAlpha);
-            yield return null;
-        }
-
-        SetAlpha(targetAlpha);
-    }
-
-    private void SetAlpha(float alpha)
-    {
-        if (targetMaterial != null)
-        {
-            Color color = targetMaterial.color;
-            color.a = alpha;
-            targetMaterial.color = color;
-        }
-    }
-}
+          if (progress >= 1) {
+            clearInterval(fadeInterval);
+            if (onComplete) onComplete();
+          }
+        }, 16); // ~60fps
+      }
+    </script>
+  </body>
+</html>
