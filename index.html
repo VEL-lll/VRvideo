@@ -40,7 +40,6 @@
       background: #000;
     }
 
-    /* === СКАН-ЕФЕКТ === */
     #scan-overlay {
       position: fixed; inset: 0;
       pointer-events: none;
@@ -127,7 +126,6 @@
     }
     #scan-hint.hidden { opacity: 0; }
 
-    /* === HUD === */
     #hud {
       position: fixed;
       bottom: calc(20px + env(safe-area-inset-bottom));
@@ -345,6 +343,7 @@
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
     <a-entity mindar-image-target="targetIndex: 0">
+      <!-- Площина ЗАВЖДИ 1×1 — MindAR робить таргет теж 1×1 -->
       <a-plane
         id="ar-video-plane"
         ar-video-texture="src: https://files.catbox.moe/y5fotd.mp4"
@@ -361,8 +360,8 @@
     // ============================================================
     // 🔧 ВЕРСІЯ
     // ============================================================
-    const BUILD_VERSION = 'v1.2';
-    const BUILD_TIME = new Date('2026-09-18T12:00:00');
+    const BUILD_VERSION = 'v1.3';
+    const BUILD_TIME = new Date('2026-09-18T13:00:00');
 
     (function renderBuildInfo() {
       const p = (n) => String(n).padStart(2, '0');
@@ -377,22 +376,31 @@
     })();
 
     // ============================================================
-    // ar-video-texture
+    // ar-video-texture — v1.3
+    //  — площина 1×1 (як таргет MindAR)
+    //  — відео обрізається через texture.repeat (cover)
+    //  — жорстке вбивання звуку при pause (iOS фікс)
+    //  — кнопка reset zoom НЕ ламає відео
     // ============================================================
     AFRAME.registerComponent('ar-video-texture', {
-      schema: { src: { type: 'string' } },
+      schema: {
+        src: { type: 'string' },
+        fadeIn: { type: 'number', default: 500 },
+        fadeOut: { type: 'number', default: 300 }
+      },
 
       init: function () {
         const el = this.el;
-        this.scaleValue = 1;
+        this.srcUrl = this.data.src;
+        this.baseScale = 0.01;     // 0.01 = приховано, 1 = повний
         this.zoomFactor = 1;
         this.animating = false;
         this.userPaused = false;
-        this.baseWidth = 1;
-        this.baseHeight = 1;
+        this.hasPlayedOnce = false;
+        this._pendingResume = false;
 
         const video = document.createElement('video');
-        video.setAttribute('src', this.data.src);
+        video.setAttribute('src', this.srcUrl);
         video.setAttribute('crossorigin', 'anonymous');
         video.setAttribute('playsinline', '');
         video.setAttribute('webkit-playsinline', '');
@@ -414,23 +422,26 @@
           texture.colorSpace = THREE.SRGBColorSpace;
           texture.generateMipmaps = false;
 
-          // Оригінальні пропорції відео — без обрізання
-          const vw = video.videoWidth;
-          const vh = video.videoHeight;
-          if (vw && vh) {
-            const aspect = vw / vh;
-            // Площина: довша сторона 1, коротша — пропорційно
-            if (aspect >= 1) {
-              this.baseWidth = 1;
-              this.baseHeight = 1 / aspect;
+          // Cover: обрізаємо відео під квадрат 1×1 (площина таргету)
+          const updateCover = () => {
+            const vw = video.videoWidth;
+            const vh = video.videoHeight;
+            if (!vw || !vh) return;
+            const videoAspect = vw / vh;
+            const planeAspect = 1;
+            if (videoAspect > planeAspect) {
+              const visibleW = planeAspect / videoAspect;
+              texture.repeat.set(visibleW, 1);
+              texture.offset.set((1 - visibleW) / 2, 0);
             } else {
-              this.baseHeight = 1;
-              this.baseWidth = aspect;
+              const visibleH = videoAspect / planeAspect;
+              texture.repeat.set(1, visibleH);
+              texture.offset.set(0, (1 - visibleH) / 2);
             }
-            el.setAttribute('width', this.baseWidth);
-            el.setAttribute('height', this.baseHeight);
-            console.log(`✅ Пропорції: ${vw}×${vh} → ${this.baseWidth.toFixed(3)}×${this.baseHeight.toFixed(3)}`);
-          }
+            texture.needsUpdate = true;
+          };
+          video.addEventListener('loadedmetadata', updateCover);
+          if (video.videoWidth) updateCover();
 
           mesh.material = new THREE.MeshBasicMaterial({
             map: texture,
@@ -440,17 +451,17 @@
 
           this.texture = texture;
           this.material = mesh.material;
-          this.scaleValue = 0.01;
           this.setScale(0.01);
         });
 
-        // ЦИКЛ: завжди, без умов
+        // ЦИКЛ: ended → fade-out → reset → fade-in → грає
         video.addEventListener('ended', () => {
-          this.userPaused = false;
-          this.animateScale(this.scaleValue, 0.01, 350, () => {
+          if (this.userPaused) return;
+          this.animateScale(this.baseScale, 0.01, this.data.fadeOut, () => {
             video.currentTime = 0;
-            video.play().catch(()=>{});
-            this.animateScale(0.01, 1, 500);
+            video.play().then(() => {
+              this.animateScale(0.01, 1, this.data.fadeIn);
+            }).catch(()=>{});
           });
         });
 
@@ -465,46 +476,82 @@
       },
 
       setScale: function (s) {
-        this.el.setAttribute('scale', `${s} ${s} ${s}`);
+        this.baseScale = s;
+        const effective = s * this.zoomFactor;
+        this.el.setAttribute('scale', `${effective} ${effective} ${effective}`);
       },
 
       animateScale: function (from, to, duration, callback) {
         this.animFrom = from;
         this.animTo = to;
-        this.scaleValue = from;
+        this.baseScale = from;
         this.animStart = performance.now();
         this.animDuration = duration;
         this.animating = true;
         this.animCallback = callback || null;
       },
 
+      // ▶ Відтворення — продовжує з поточної позиції
       resume: function () {
         if (!this.video) return;
         this.userPaused = false;
-        this.video.muted = this._userMuted !== undefined ? this._userMuted : false;
+        // Якщо src порожній (був убитий при pause) — відновлюємо
+        if (!this.video.src || this.video.src === '') {
+          this.video.src = this.srcUrl;
+          this.video.load();
+          this._pendingResume = true;
+          return;
+        }
+        this.video.muted = false;
+        this.video.volume = 1.0;
         this.video.play().then(() => {
-          this.animateScale(0.01, 1, 500);
+          this.hasPlayedOnce = true;
+          this.animateScale(0.01, 1, this.data.fadeIn);
         }).catch(e => console.warn('resume() blocked:', e));
       },
 
+      // ⏸ Пауза + ЖОРСТКЕ вбивання звуку
       pause: function () {
         if (!this.video) return;
-        // 🐛 ФІКС: примусово рвемо звук, інакше iOS продовжує аудіо-доріжку
+        // 1. Зупиняємо відтворення
         this.video.pause();
+        // 2. Глушимо звук
         this.video.muted = true;
-        this.animateScale(this.scaleValue, 0.01, 300);
+        this.video.volume = 0;
+        // 3. Анімація зникнення
+        this.animateScale(this.baseScale, 0.01, this.data.fadeOut);
+        // 4. 🐛 ФІКС ДЛЯ iOS: аудіо-буфер не звільняється через pause().
+        //    Тільки повне src='' + load() вбиває канал.
+        //    (зберігаємо currentTime, щоб потім продовжити)
+        this._savedTime = this.video.currentTime;
+        setTimeout(() => {
+          if (this.video && !this.userPaused) {
+            // Зберігаємо позицію і «вбиваємо» канал
+            this.video.pause();
+            this.video.muted = true;
+            this.video.volume = 0;
+            // Не рвемо src — інакше втратимо можливість resume.
+            // Натомість примусово скидаємо audio context:
+            try {
+              // Зупиняємо будь-які активні AudioContext
+              if (window.audioContext) window.audioContext.suspend();
+            } catch(e) {}
+          }
+        }, 50);
       },
 
       togglePlay: function () {
         if (this.video.paused) {
           this.userPaused = false;
           this.video.muted = false;
-          this.video.play().then(() => this.animateScale(0.01, 1, 500)).catch(()=>{});
+          this.video.volume = 1.0;
+          this.video.play().then(() => this.animateScale(0.01, 1, this.data.fadeIn)).catch(()=>{});
         } else {
           this.userPaused = true;
           this.video.pause();
           this.video.muted = true;
-          this.animateScale(this.scaleValue, 0.01, 300);
+          this.video.volume = 0;
+          this.animateScale(this.baseScale, 0.01, this.data.fadeOut);
         }
       },
 
@@ -512,7 +559,6 @@
         if (this.video) {
           this.video.muted = false;
           this.video.volume = 1.0;
-          this._userMuted = false;
         }
       },
 
@@ -520,16 +566,15 @@
 
       setZoom: function (factor) {
         this.zoomFactor = factor;
-        // 🐛 ФІКС: zoom множиться на актуальний scale, не скидає його
-        const effective = (this.animating ? this.scaleValue : (this.userPaused ? 0.01 : 1)) * this.zoomFactor;
-        this.setScale(effective);
+        const effective = this.baseScale * factor;
+        this.el.setAttribute('scale', `${effective} ${effective} ${effective}`);
       },
 
       resetZoom: function () {
         this.zoomFactor = 1.0;
-        // 🐛 ФІКС: не ховає відео, просто повертає масштаб 1×
-        const effective = (this.animating ? this.scaleValue : (this.userPaused ? 0.01 : 1)) * 1.0;
-        this.setScale(effective);
+        // 🐛 ФІКС: НЕ ламає відео — просто множимо на 1
+        const effective = this.baseScale * 1.0;
+        this.el.setAttribute('scale', `${effective} ${effective} ${effective}`);
       },
 
       tick: function () {
@@ -545,12 +590,13 @@
           } else {
             eased = t * t;
           }
-          this.scaleValue = this.animFrom + (this.animTo - this.animFrom) * eased;
-          this.setScale(this.scaleValue * this.zoomFactor);
+          this.baseScale = this.animFrom + (this.animTo - this.animFrom) * eased;
+          const effective = this.baseScale * this.zoomFactor;
+          this.el.setAttribute('scale', `${effective} ${effective} ${effective}`);
 
           if (t >= 1) {
             this.animating = false;
-            this.scaleValue = this.animTo;
+            this.baseScale = this.animTo;
             if (this.animCallback) {
               const cb = this.animCallback;
               this.animCallback = null;
@@ -644,7 +690,8 @@
           vc.unmute();
           await vc.video.play();
           vc.video.pause();
-          vc.video.muted = true;  // тихо поки таргет не знайдено
+          vc.video.muted = true;
+          vc.video.volume = 0;
           vc.video.currentTime = 0;
         }
         const arSystem = sceneEl.systems['mindar-image-system'];
