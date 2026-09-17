@@ -8,7 +8,6 @@
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
     
     <style>
-      /* Повний захист від системних виділень, лупи та меню на мобільних */
       body {
         margin: 0; 
         overflow: hidden; 
@@ -55,7 +54,6 @@
         opacity: 0.7;
       }
 
-      /* Підказка для сканування */
       #scan-instruction {
         position: fixed;
         top: max(24px, env(safe-area-inset-top));
@@ -80,7 +78,6 @@
         opacity: 1;
       }
 
-      /* Індикатор стану дій */
       #action-status {
         position: fixed;
         top: 50%;
@@ -108,7 +105,6 @@
         transform: translate(-50%, -50%) scale(1);
       }
 
-      /* Кнопка керування звуком */
       #sound-toggle {
         position: fixed;
         top: max(20px, env(safe-area-inset-top));
@@ -159,12 +155,11 @@
     <div id="action-status"></div>
     <div id="sound-toggle">🔇</div>
     
-    <div id="time-badge">Test #24 | Final</div>
+    <div id="time-badge">17.09.2026, 08:31:40</div>
 
     <a-scene mindar-image="imageTargetSrc: targets.mind; filterMinCF: 0.005; filterBeta: 3000; warmupTolerance: 3; missTolerance: 5;" color-space="sRGB" renderer="colorManagement: true; antialias: false; precision: mediump; physicallyCorrectLights: false;" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
       
       <a-assets>
-        <!-- Додано важливі атрибути для безперебійного відтворення на iOS -->
         <video id="my-video" src="https://files.catbox.moe/y5fotd.mp4" preload="auto" response-type="arraybuffer" crossorigin="anonymous" webkit-playsinline playsinline loop muted disablePictureInPicture></video>
       </a-assets>
 
@@ -196,12 +191,84 @@
       let isTargetFound = false;
       let statusTimeout = null;
 
-      // 3D Audio
+      // === 3D ЗВУК (Web Audio API HRTF Panner) ===
       let audioCtx = null;
-      let spatialSound = null;
+      let pannerNode = null;
+      let mediaSource = null;
       let isAudioConfigured = false;
 
-      // UI Status Function (Покращена плавність)
+      const planePos = new THREE.Vector3();
+      const cameraPos = new THREE.Vector3();
+      const cameraQuaternion = new THREE.Quaternion();
+      const cameraForward = new THREE.Vector3();
+      const cameraUp = new THREE.Vector3();
+
+      function init3DAudio() {
+        if (isAudioConfigured) return;
+        
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+
+        audioCtx = new AudioContext();
+        
+        pannerNode = audioCtx.createPanner();
+        pannerNode.panningModel = 'HRTF';
+        pannerNode.distanceModel = 'inverse';
+        pannerNode.refDistance = 0.8;
+        pannerNode.maxDistance = 10000;
+        pannerNode.rolloffFactor = 1.5;
+
+        mediaSource = audioCtx.createMediaElementSource(videoElement);
+        mediaSource.connect(pannerNode);
+        pannerNode.connect(audioCtx.destination);
+
+        isAudioConfigured = true;
+      }
+
+      function update3DAudio() {
+        if (!isAudioConfigured || !pannerNode || !isTargetFound || !audioCtx) return;
+
+        const planeObj = videoPlane.object3D;
+        const cameraObj = mainCamera.getObject3D('camera');
+
+        if (!planeObj || !cameraObj) return;
+
+        planeObj.getWorldPosition(planePos);
+        cameraObj.getWorldPosition(cameraPos);
+        cameraObj.getWorldQuaternion(cameraQuaternion);
+
+        cameraForward.set(0, 0, -1).applyQuaternion(cameraQuaternion);
+        cameraUp.set(0, 1, 0).applyQuaternion(cameraQuaternion);
+
+        const listener = audioCtx.listener;
+        if (listener.positionX) {
+          listener.positionX.setValueAtTime(cameraPos.x, audioCtx.currentTime);
+          listener.positionY.setValueAtTime(cameraPos.y, audioCtx.currentTime);
+          listener.positionZ.setValueAtTime(cameraPos.z, audioCtx.currentTime);
+          
+          listener.forwardX.setValueAtTime(cameraForward.x, audioCtx.currentTime);
+          listener.forwardY.setValueAtTime(cameraForward.y, audioCtx.currentTime);
+          listener.forwardZ.setValueAtTime(cameraForward.z, audioCtx.currentTime);
+          
+          listener.upX.setValueAtTime(cameraUp.x, audioCtx.currentTime);
+          listener.upY.setValueAtTime(cameraUp.y, audioCtx.currentTime);
+          listener.upZ.setValueAtTime(cameraUp.z, audioCtx.currentTime);
+        } else {
+          listener.setPosition(cameraPos.x, cameraPos.y, cameraPos.z);
+          listener.setOrientation(cameraForward.x, cameraForward.y, cameraForward.z, cameraUp.x, cameraUp.y, cameraUp.z);
+        }
+
+        if (pannerNode.positionX) {
+          pannerNode.positionX.setValueAtTime(planePos.x, audioCtx.currentTime);
+          pannerNode.positionY.setValueAtTime(planePos.y, audioCtx.currentTime);
+          pannerNode.positionZ.setValueAtTime(planePos.z, audioCtx.currentTime);
+        } else {
+          pannerNode.setPosition(planePos.x, planePos.y, planePos.z);
+        }
+
+        requestAnimationFrame(update3DAudio);
+      }
+
       function showStatus(text, duration = 1200) {
         actionStatus.textContent = text;
         actionStatus.classList.add("show");
@@ -213,61 +280,13 @@
         }
       }
 
-      // Gesture Variables
-      let initialDistance = 0;
-      let baseScale = 1;
-      let currentScale = 1;
-      
-      let touchStartTime = 0;
-      let holdTimeout = null;
-      let isHolding = false;       
-      let isAccelerating = false;  
-      let isTwoFingerGesture = false;
-
-      // Скидання всіх швидкостей до норми
-      function resetPlaybackRate() {
-        if (videoElement.playbackRate !== 1.0) {
-          videoElement.playbackRate = 1.0;
-          isHolding = false;
-          isAccelerating = false;
-          actionStatus.classList.remove("show");
-        }
-      }
-
-      // Unlock Interaction & Audio Context Setup
       overlay.addEventListener("click", () => {
         if (isUnlocked) return;
         isUnlocked = true;
         
-        // Ініціалізація 3D аудіо
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        if (AudioContext) {
-          audioCtx = new AudioContext();
-          audioCtx.resume().then(() => {
-            if (!isAudioConfigured) {
-              isAudioConfigured = true;
-              
-              const listener = new THREE.AudioListener();
-              mainCamera.getObject3D('camera').add(listener);
-
-              spatialSound = new THREE.PositionalAudio(listener);
-              spatialSound.setRefDistance(1.5);    
-              spatialSound.setRolloffFactor(3);    
-              spatialSound.setDistanceModel('exponential');
-              
-              const mediaSource = audioCtx.createMediaElementSource(videoElement);
-              mediaSource.connect(spatialSound.getInput());
-              
-              // Забезпечуємо, щоб 3D-звук було створено лише тоді, коли площина готова
-              if (videoPlane.getObject3D('mesh')) {
-                videoPlane.getObject3D('mesh').add(spatialSound);
-              } else {
-                videoPlane.addEventListener('loaded', () => {
-                  videoPlane.getObject3D('mesh').add(spatialSound);
-                });
-              }
-            }
-          });
+        init3DAudio();
+        if (audioCtx && audioCtx.state === 'suspended') {
+          audioCtx.resume();
         }
 
         videoElement.muted = false;
@@ -284,7 +303,6 @@
         }).catch(err => console.log("Unlock error:", err));
       });
 
-      // Звук On/Off
       soundToggle.addEventListener("click", (e) => {
         e.stopPropagation();
         e.preventDefault();
@@ -292,14 +310,20 @@
         soundToggle.textContent = videoElement.muted ? "🔇" : "🔊";
       });
 
-      // Target Logic
       targetEntity.addEventListener("targetFound", () => {
         if (!isUnlocked) return;
         isTargetFound = true;
         if (fadeOutTimeout) clearTimeout(fadeOutTimeout);
         scanInstruction.classList.remove("visible");
+        
         videoElement.play().catch(e => console.log("Play failed:", e));
         videoPlane.emit("showVideo");
+
+        if (audioCtx && audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+        
+        requestAnimationFrame(update3DAudio);
       });
       
       targetEntity.addEventListener("targetLost", () => {
@@ -307,88 +331,25 @@
         isTargetFound = false;
         scanInstruction.classList.add("visible");
         videoPlane.emit("hideVideo");
-        
-        // Гарантоване скидання швидкості при втраті маркера
-        resetPlaybackRate();
-        clearTimeout(holdTimeout);
+        actionStatus.classList.remove("show");
 
         fadeOutTimeout = setTimeout(() => {
           videoElement.pause();
         }, 600);
       });
 
-      // === GESTURE SYSTEM (Stable 60FPS) ===
-
-      function handleGestureEnd(e) {
-        if (!isTargetFound) return;
-
-        // Вимикаємо прискорення, якщо відпустили один із двох пальців
-        if (isTwoFingerGesture && e.touches.length < 2) {
-          if (isAccelerating) {
-            videoElement.playbackRate = 1.0;
-            isAccelerating = false;
-            showStatus("▶️ 1.0x Норма", 800);
-          }
-        }
-
-        // Обробка підняття єдиного пальця
-        if (!isTwoFingerGesture && e.changedTouches.length === 1) {
-          clearTimeout(holdTimeout);
-          
-          if (isHolding) {
-            videoElement.playbackRate = 1.0;
-            isHolding = false;
-            showStatus("▶️ 1.0x Норма", 800);
-          } else if (e.touches.length === 0) {
-            // Тап для Паузи/Плею
-            const touchDuration = Date.now() - touchStartTime;
-            if (touchDuration < 300) {
-              if (videoElement.paused) {
-                videoElement.play();
-                showStatus("▶️ Відтворення", 1000);
-              } else {
-                videoElement.pause();
-                showStatus("⏸ Пауза", 0); // Висить, поки пауза
-              }
-            }
-          }
-        }
-
-        // Повний скид при нулі пальців
-        if (e.touches.length === 0) {
-          isTwoFingerGesture = false;
-          resetPlaybackRate();
-        }
-      }
+      // === ЖЕСТИ (ЗУМ ТА ПАУЗА) ===
+      let initialDistance = 0;
+      let baseScale = 1;
+      let currentScale = 1;
+      let touchStartTime = 0;
 
       window.addEventListener('touchstart', (e) => {
         if (!isTargetFound || e.target.closest('#sound-toggle')) return;
 
         if (e.touches.length === 1) {
-          isTwoFingerGesture = false;
           touchStartTime = Date.now();
-          
-          holdTimeout = setTimeout(() => {
-            if (!isTwoFingerGesture && !videoElement.paused) {
-              videoElement.playbackRate = 0.5;
-              isHolding = true;
-              showStatus("🐌 0.5x Slow-mo", 0);
-            }
-          }, 350); // Трохи збільшено час, щоб уникнути конфлікту з тапом
-
         } else if (e.touches.length === 2) {
-          isTwoFingerGesture = true;
-          clearTimeout(holdTimeout); 
-          isHolding = false;
-
-          // Вмикаємо прискорення (тільки якщо відео йде)
-          if (!videoElement.paused) {
-            videoElement.playbackRate = 2.0;
-            isAccelerating = true;
-            showStatus("⏩ 2.0x Ускорення", 0);
-          }
-
-          // Фіксуємо дистанцію для зуму
           const dx = e.touches[0].clientX - e.touches[1].clientX;
           const dy = e.touches[0].clientY - e.touches[1].clientY;
           initialDistance = Math.hypot(dx, dy);
@@ -399,7 +360,7 @@
       window.addEventListener('touchmove', (e) => {
         if (!isTargetFound) return;
         
-        if (e.touches.length === 2 && isTwoFingerGesture) {
+        if (e.touches.length === 2) {
           e.preventDefault(); 
           
           const dx = e.touches[0].clientX - e.touches[1].clientX;
@@ -409,24 +370,27 @@
           let factor = dist / initialDistance;
           currentScale = Math.max(0.4, Math.min(3.5, baseScale * factor));
           
-          // ОПТИМІЗАЦІЯ: Пряме звернення до 3D-об'єкта (набагато швидше за setAttribute)
           if (videoPlane.object3D) {
             videoPlane.object3D.scale.set(currentScale, currentScale, currentScale);
           }
-        } else if (e.touches.length === 1) {
-          // Якщо палець суттєво змістився — це свайп, а не утримання. Скасовуємо слоу-мо.
-          clearTimeout(holdTimeout); 
         }
       }, { passive: false });
 
-      // Нормальне завершення дотику
-      window.addEventListener('touchend', handleGestureEnd);
-      
-      // Переривання дотику (наприклад, системне сповіщення)
-      window.addEventListener('touchcancel', (e) => {
-        clearTimeout(holdTimeout);
-        resetPlaybackRate();
-        isTwoFingerGesture = false;
+      window.addEventListener('touchend', (e) => {
+        if (!isTargetFound || e.target.closest('#sound-toggle')) return;
+
+        if (e.touches.length === 0 && e.changedTouches.length === 1) {
+          const touchDuration = Date.now() - touchStartTime;
+          if (touchDuration < 300) {
+            if (videoElement.paused) {
+              videoElement.play();
+              showStatus("▶️ Відтворення", 1000);
+            } else {
+              videoElement.pause();
+              showStatus("⏸ Пауза", 0);
+            }
+          }
+        }
       });
     </script>
   </body>
