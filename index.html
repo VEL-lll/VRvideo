@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-    <title>AR Video Experience</title>
+    <title>AR Video Experience with 3D Pop-out</title>
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
     
@@ -155,7 +155,7 @@
     <div id="action-status"></div>
     <div id="sound-toggle">🔇</div>
     
-    <div id="time-badge">17.09.2026, 08:31:40</div>
+    <div id="time-badge">17.09.2026, 08:33:31</div>
 
     <a-scene mindar-image="imageTargetSrc: targets.mind; filterMinCF: 0.005; filterBeta: 3000; warmupTolerance: 3; missTolerance: 5;" color-space="sRGB" renderer="colorManagement: true; antialias: false; precision: mediump; physicallyCorrectLights: false;" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
       
@@ -166,12 +166,53 @@
       <a-camera id="main-camera" position="0 0 0" look-controls="enabled: false"></a-camera>
 
       <a-entity mindar-image-target="targetIndex: 0">
+        
+        <!-- Головна площина відео -->
         <a-plane id="video-plane" src="#my-video" position="0 0 0" height="1.33" width="0.75" 
                  rotation="0 0 0" scale="1 1 1"
                  material="shader: flat; transparent: true; opacity: 0;"
                  animation__fadein="property: material.opacity; to: 1; dur: 1000; easing: easeOutCubic; startEvents: showVideo"
                  animation__fadeout="property: material.opacity; to: 0; dur: 600; easing: easeInCubic; startEvents: hideVideo">
         </a-plane>
+
+        <!-- === 3D POP-OUT ЕЛЕМЕНТИ (ВИЛІТАЮТЬ ВПРЕД) === -->
+        <a-entity id="popout-container">
+          
+          <!-- 1. Світлова 3D-рамка, яка висить перед відео -->
+          <a-ring position="0 0 0.15" radius-inner="0.4" radius-outer="0.42" material="color: #ff416c; shader: flat; transparent: true; opacity: 0"
+                  animation__ring_in="property: material.opacity; to: 0.8; dur: 800; easing: easeOutQuad; startEvents: popIn"
+                  animation__ring_out="property: material.opacity; to: 0; dur: 400; easing: easeInQuad; startEvents: popOut"
+                  animation__rotate="property: rotation; to: 0 0 360; loop: true; dur: 12000; easing: linear">
+          </a-ring>
+
+          <!-- 2. Лівий вилітаючий 3D-елемент (Кристал/Октаедр) -->
+          <a-octahedron position="0 0 0" scale="0.08 0.08 0.08" material="color: #00f2fe; wireframe: true; transparent: true; opacity: 0"
+                         animation__pop_pos="property: position; to: -0.5 0.5 0.35; dur: 1000; easing: easeOutBack; startEvents: popIn"
+                         animation__pop_op="property: material.opacity; to: 0.9; dur: 800; startEvents: popIn"
+                         animation__pop_out_op="property: material.opacity; to: 0; dur: 400; startEvents: popOut"
+                         animation__float="property: position; to: -0.5 0.55 0.35; dir: alternate; loop: true; dur: 2000; easing: easeInOutSine"
+                         animation__rot="property: rotation; to: 360 360 0; loop: true; dur: 8000; easing: linear">
+          </a-octahedron>
+
+          <!-- 3. Правий вилітаючий 3D-елемент (Сфера з рожевим сяйвом) -->
+          <a-icosahedron position="0 0 0" scale="0.07 0.07 0.07" material="color: #ff4b2b; wireframe: true; transparent: true; opacity: 0"
+                          animation__pop_pos2="property: position; to: 0.5 -0.4 0.4; dur: 1100; easing: easeOutBack; startEvents: popIn"
+                          animation__pop_op2="property: material.opacity; to: 0.9; dur: 800; startEvents: popIn"
+                          animation__pop_out_op2="property: material.opacity; to: 0; dur: 400; startEvents: popOut"
+                          animation__float2="property: position; to: 0.5 -0.35 0.4; dir: alternate; loop: true; dur: 2200; easing: easeInOutSine"
+                          animation__rot2="property: rotation; to: 0 360 360; loop: true; dur: 7000; easing: linear">
+          </a-icosahedron>
+
+          <!-- 4. Верхні 3D-іскри/зірки, що ширяють -->
+          <a-tetrahedron position="0 0 0" scale="0.05 0.05 0.05" material="color: #ffeb3b; shader: flat; transparent: true; opacity: 0"
+                         animation__pop_pos3="property: position; to: 0.35 0.75 0.25; dur: 900; easing: easeOutBack; startEvents: popIn"
+                         animation__pop_op3="property: material.opacity; to: 0.8; dur: 800; startEvents: popIn"
+                         animation__pop_out_op3="property: material.opacity; to: 0; dur: 400; startEvents: popOut"
+                         animation__rot3="property: rotation; to: 360 0 360; loop: true; dur: 5000; easing: linear">
+          </a-tetrahedron>
+
+        </a-entity>
+
       </a-entity>
       
     </a-scene>
@@ -185,6 +226,9 @@
       const scanInstruction = document.querySelector("#scan-instruction");
       const soundToggle = document.querySelector("#sound-toggle");
       const actionStatus = document.querySelector("#action-status");
+
+      const popoutContainer = document.querySelector("#popout-container");
+      const popoutChildren = popoutContainer.children;
 
       let fadeOutTimeout = null;
       let isUnlocked = false;
@@ -280,6 +324,19 @@
         }
       }
 
+      // Запуск 3D-анімацій вильоту
+      function triggerPopOut() {
+        for (let child of popoutChildren) {
+          child.emit("popIn");
+        }
+      }
+
+      function triggerPopOutReset() {
+        for (let child of popoutChildren) {
+          child.emit("popOut");
+        }
+      }
+
       overlay.addEventListener("click", () => {
         if (isUnlocked) return;
         isUnlocked = true;
@@ -318,6 +375,9 @@
         
         videoElement.play().catch(e => console.log("Play failed:", e));
         videoPlane.emit("showVideo");
+        
+        // Активуємо виліт 3D елементів
+        triggerPopOut();
 
         if (audioCtx && audioCtx.state === 'suspended') {
           audioCtx.resume();
@@ -331,6 +391,9 @@
         isTargetFound = false;
         scanInstruction.classList.add("visible");
         videoPlane.emit("hideVideo");
+        
+        // Ховаємо 3D елементи назад
+        triggerPopOutReset();
         actionStatus.classList.remove("show");
 
         fadeOutTimeout = setTimeout(() => {
