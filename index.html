@@ -168,7 +168,6 @@
     }
     .hud-btn svg { width: 24px; height: 24px; fill: #fff; }
 
-    /* === ІНДИКАТОР ВЕРСІЇ — більший і помітніший === */
     #build-time {
       position: fixed;
       right: calc(10px + env(safe-area-inset-right));
@@ -340,7 +339,7 @@
     vr-mode-ui="enabled: false"
     device-orientation-permission-ui="enabled: false"
     color-space="sRGB"
-    renderer="alpha: true; antialias: false; sortObjects: false; physicallyCorrectLights: false; logarithmicDepthBuffer: false;"
+    renderer="alpha: true; colorManagement: true; antialias: false; sortObjects: false; physicallyCorrectLights: false; logarithmicDepthBuffer: false;"
     embedded
   >
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
@@ -360,11 +359,10 @@
 
   <script>
     // ============================================================
-    // 🔧 НАЛАШТУВАННЯ ВЕРСІЇ
-    // Змініть BUILD_VERSION та BUILD_TIME вручну при кожному релізі.
+    // 🔧 ВЕРСІЯ
     // ============================================================
-    const BUILD_VERSION = 'v1.0';                        // версія коду
-    const BUILD_TIME = new Date('2026-09-17T17:28:00');  // ← час написання ЦІЄЇ версії
+    const BUILD_VERSION = 'v1.1';
+    const BUILD_TIME = new Date('2026-09-17T18:00:00');
 
     (function renderBuildInfo() {
       const p = (n) => String(n).padStart(2, '0');
@@ -372,12 +370,8 @@
       const formatted =
         `${p(d.getDate())}.${p(d.getMonth()+1)}.${d.getFullYear()} ` +
         `${p(d.getHours())}:${p(d.getMinutes())}`;
-
-      // правий нижній кут
       document.getElementById('build-time').textContent =
         `${BUILD_VERSION} · ${formatted}`;
-
-      // на стартовому екрані
       const badge = document.getElementById('start-version');
       if (badge) badge.textContent = `${BUILD_VERSION} · ${formatted}`;
     })();
@@ -415,6 +409,7 @@
           texture.minFilter = THREE.LinearFilter;
           texture.magFilter = THREE.LinearFilter;
           texture.format = THREE.RGBAFormat;
+          texture.colorSpace = THREE.SRGBColorSpace;  // ← коректні кольори
           texture.generateMipmaps = false;
 
           const updateCover = () => {
@@ -440,7 +435,7 @@
           mesh.material = new THREE.MeshBasicMaterial({
             map: texture,
             side: THREE.DoubleSide,
-            toneMapped: false
+            toneMapped: false  // ← без затемнення
           });
 
           this.texture = texture;
@@ -449,6 +444,7 @@
           this.setScale(0.01);
         });
 
+        // ЦИКЛ: ended → завжди автоматично
         video.addEventListener('ended', () => {
           if (this.userPaused) return;
           this.animateScale(this.scaleValue, 0.01, 350, () => {
@@ -482,19 +478,22 @@
         this.animCallback = callback || null;
       },
 
-      play: function () {
+      // ▶ Відтворення БЕЗ скидання позиції
+      resume: function () {
         if (!this.video) return;
         this.userPaused = false;
         this.video.play().then(() => {
           this.animateScale(0.01, 1, 500);
-        }).catch(e => console.warn('play() blocked:', e));
+        }).catch(e => console.warn('resume() blocked:', e));
       },
 
+      // ⏸ Пауза БЕЗ скидання позиції
       pause: function () {
         if (this.video) this.video.pause();
         this.animateScale(this.scaleValue, 0.01, 300);
       },
 
+      // Кнопка Play/Pause — явне перемикання
       togglePlay: function () {
         if (this.video.paused) {
           this.userPaused = false;
@@ -630,6 +629,7 @@
           vc.unmute();
           await vc.video.play();
           vc.video.pause();
+          vc.video.currentTime = 0;  // старт з початку
         }
         const arSystem = sceneEl.systems['mindar-image-system'];
         if (arSystem) await arSystem.start();
@@ -650,21 +650,19 @@
 
     const targetEl = document.querySelector('[mindar-image-target]');
 
+    // ПРИ ЗНАХОДЖЕННІ ТАРГЕТУ: автозапуск/продовження
     targetEl.addEventListener('targetFound', async () => {
       scanOverlay.classList.remove('show');
       scanHint.classList.add('hidden');
       hud.classList.add('show');
       const vc = videoPlane.components['ar-video-texture'];
       if (!vc) return;
-      if (vc.isPaused()) {
-        vc.video.currentTime = 0;
-        await vc.play();
-      } else {
-        vc.animateScale(0.01, 1, 500);
-      }
+      // resume — НЕ скидає currentTime, продовжує з того ж місця
+      await vc.resume();
       iconPlay.innerHTML = ICON_PAUSE;
     });
 
+    // ПРИ ВТРАТІ ТАРГЕТУ: пауза (позиція зберігається)
     targetEl.addEventListener('targetLost', () => {
       scanOverlay.classList.add('show');
       scanHint.classList.remove('hidden');
