@@ -21,10 +21,10 @@
 </head>
 <body style="margin: 0; overflow: hidden;">
 
-  <div id="version-label">04:33</div>
+  <div id="version-label">04:35</div>
 
-  <!-- Відео, яке буде накладатись на ціль -->
-  <video id="my-video" src="https://files.catbox.moe/vyigmo.mp4" preload="auto" response-type="arraybuffer" crossorigin="anonymous" webkit-playsinline playsinline muted loop></video>
+  <!-- Відео з додатковими атрибутами для мобільних -->
+  <video id="my-video" src="https://files.catbox.moe/vyigmo.mp4" preload="auto" crossorigin="anonymous" webkit-playsinline playsinline muted loop></video>
 
   <a-scene mindar-image="imageTargetSrc: targets.mind;" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
     <a-assets>
@@ -43,8 +43,18 @@
     const videoElement = document.querySelector('#my-video');
     const targetEntity = document.querySelector('#mindar-image-target');
 
+    // Розблокування відео першим дотиком до екрана (потрібно для мобільних браузерів)
+    window.addEventListener('click', () => {
+      if (videoElement.paused) {
+        videoElement.play().catch(e => console.log("Play prevented:", e));
+        videoElement.pause();
+      }
+    }, { once: true });
+
     targetEntity.addEventListener('targetFound', event => {
-      videoElement.play();
+      videoElement.play().catch(error => {
+        console.log("Error playing video:", error);
+      });
     });
 
     targetEntity.addEventListener('targetLost', event => {
