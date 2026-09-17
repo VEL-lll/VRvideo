@@ -144,10 +144,10 @@
     <div id="scan-instruction">📍 Наведіть камеру на фото</div>
     <div id="action-status"></div>
     <div id="sound-toggle">🔇</div>
-    <div id="time-badge">17.09.2026, 08:54:50</div>
+    <div id="time-badge">17.09.2026, 09:05:10</div>
 
-    <!-- Абсолютно стабільні налаштування фільтрації трекінгу без дребезжання -->
-    <a-scene mindar-image="imageTargetSrc: targets.mind; filterMinCF: 0.00001; filterBeta: 0.001; warmupTolerance: 3; missTolerance: 5;" color-space="sRGB" renderer="colorManagement: true; antialias: true; precision: highp;" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
+    <!-- Тонко налаштований трекінг для ідеального слідування за обертанням і нахилом фотографії -->
+    <a-scene mindar-image="imageTargetSrc: targets.mind; filterMinCF: 0.0001; filterBeta: 0.001; warmupTolerance: 3; missTolerance: 8;" color-space="sRGB" renderer="colorManagement: true; antialias: true; precision: highp;" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
       
       <a-assets>
         <video id="my-video" src="https://files.catbox.moe/y5fotd.mp4" preload="auto" crossorigin="anonymous" webkit-playsinline playsinline loop></video>
@@ -155,11 +155,11 @@
 
       <a-camera id="main-camera" position="0 0 0" look-controls="enabled: false"></a-camera>
 
-      <!-- Чітка і рівна прив'язка до цілі -->
+      <!-- Сувора привязка до цілі без жодних фіксованих компенсацій на камеру -->
       <a-entity id="target-entity" mindar-image-target="targetIndex: 0">
         <a-plane id="video-plane" src="#my-video" position="0 0 0" height="1.33" width="0.75" 
                  rotation="0 0 0" scale="1 1 1"
-                 material="shader: flat; transparent: false; opacity: 1;"
+                 material="shader: flat; transparent: true; opacity: 0;"
                  visible="false">
         </a-plane>
       </a-entity>
@@ -178,6 +178,7 @@
       let isUnlocked = false;
       let userMuted = false;
       let statusTimeout = null;
+      let fadeAnimationId = null;
 
       function showStatus(text, duration = 1000) {
         actionStatus.textContent = text;
@@ -190,7 +191,37 @@
         }
       }
 
-      // Ініціалізація по кліку користувача
+      // Плавна анімація появи/зникнення прозорості (Fade-in / Fade-out)
+      function animateOpacity(targetOpacity, duration = 600, onComplete) {
+        if (fadeAnimationId) cancelAnimationFrame(fadeAnimationId);
+        
+        const material = videoPlane.components.material;
+        if (!material) return;
+        
+        const startOpacity = material.material.opacity;
+        const startTime = performance.now();
+
+        function step(currentTime) {
+          const elapsed = currentTime - startTime;
+          const progress = Math.min(elapsed / duration, 1);
+          
+          // Плавна крива easeInOut
+          const eased = progress < 0.5 ? 2 * progress * progress : -1 + (4 - 2 * progress) * progress;
+          const currentOpacity = startOpacity + (targetOpacity - startOpacity) * eased;
+          
+          material.material.opacity = currentOpacity;
+          videoPlane.setAttribute('material', 'opacity', currentOpacity);
+
+          if (progress < 1) {
+            fadeAnimationId = requestAnimationFrame(step);
+          } else {
+            if (onComplete) onComplete();
+          }
+        }
+        fadeAnimationId = requestAnimationFrame(step);
+      }
+
+      // Ініціалізація по кліку
       overlay.addEventListener("click", () => {
         if (isUnlocked) return;
         isUnlocked = true;
@@ -201,7 +232,6 @@
         scanInstruction.classList.add("visible");
         soundToggle.style.display = "flex";
 
-        // Прогріваємо відео аудіопотік
         videoElement.muted = true;
         videoElement.play().then(() => {
           videoElement.pause();
@@ -217,25 +247,40 @@
         soundToggle.textContent = userMuted ? "🔇" : "🔊";
       });
 
-      // Жорсткий контроль трекінгу: знайдено -> відтворення + звук (якщо не заглушено)
+      // Трекінг знайдено: робимо видимим, плавно проявляємо і запускаємо
       targetEntity.addEventListener("targetFound", () => {
         if (!isUnlocked) return;
         scanInstruction.classList.remove("visible");
+        
         videoPlane.setAttribute("visible", "true");
         
         videoElement.muted = userMuted;
         videoElement.play().catch(e => console.log("Play error:", e));
+        
+        animateOpacity(1.0, 700); // Повільна, красива поява
       });
       
-      // Втрачено -> моментальна зупинка і вимикання звуку/відео
+      // Трекінг втрачено: плавно гасимо видимість, ставимо на паузу і вимикаємо звук
       targetEntity.addEventListener("targetLost", () => {
         if (!isUnlocked) return;
         scanInstruction.classList.add("visible");
-        videoPlane.setAttribute("visible", "false");
         actionStatus.classList.remove("show");
         
-        videoElement.pause();
-        videoElement.muted = true; // Захист від фонового звуку в повітрі
+        animateOpacity(0, 500, () => {
+          videoPlane.setAttribute("visible", "false");
+          videoElement.pause();
+          videoElement.muted = true;
+        });
+      });
+
+      // Перевірка завершення відео для ефекту згасання в кінці
+      videoElement.addEventListener('timeupdate', () => {
+        if (!videoElement.duration) return;
+        const timeLeft = videoElement.duration - videoElement.currentTime;
+        // За 0.6 секунди до кінця циклу плавно згашуємо перед повтором/паузою
+        if (timeLeft < 0.6 && videoElement.currentTime > 1) {
+          // Можна додати мінімальне згасання або залишити безшовний циклічний перехід
+        }
       });
 
       // === ЖЕСТИ (Плавний зум і пауза) ===
