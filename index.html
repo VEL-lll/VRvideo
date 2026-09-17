@@ -1,67 +1,124 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.Video;
 
 [RequireComponent(typeof(VideoPlayer))]
-public class ARVideoPlayer : MonoBehaviour
+public class ARVideoPlayerWithFade : MonoBehaviour
 {
     [Header("Налаштування відео")]
     [Tooltip("Посилання на відео")]
     public string videoUrl = "https://files.catbox.moe/gswdrf.mov";
     public bool loopVideo = true;
 
+    [Header("Налаштування ефектів")]
+    [Tooltip("Тривалість появи та зникання у секундах")]
+    public float fadeDuration = 0.5f;
+
+    [Tooltip("MeshRenderer плоскості (Quad/Plane), на яку виводиться відео")]
+    public MeshRenderer targetRenderer;
+
     private VideoPlayer videoPlayer;
+    private Material targetMaterial;
+    private Coroutine fadeCoroutine;
 
     void Awake()
     {
         videoPlayer = GetComponent<VideoPlayer>();
-        
-        // Базові налаштування
+
+        // Базові налаштування VideoPlayer
         videoPlayer.source = VideoSource.Url;
         videoPlayer.url = videoUrl;
         videoPlayer.playOnAwake = false;
         videoPlayer.isLooping = loopVideo;
-        
-        // Рендеринг на RenderTexture або Material (залежить від твоїх налаштувань)
-        // videoPlayer.renderMode = VideoRenderMode.MaterialOverride; 
-        
-        // Починаємо підготовку відео у фоні
+
+        // Пошук MeshRenderer, якщо він не призначений в інспекторі
+        if (targetRenderer == null)
+        {
+            targetRenderer = GetComponent<MeshRenderer>();
+        }
+
+        if (targetRenderer != null)
+        {
+            targetMaterial = targetRenderer.material;
+            // Робимо об'єкт повністю прозорим на початку
+            SetAlpha(0f);
+        }
+
+        // Попереднє завантаження відео з мережі
         videoPlayer.Prepare();
     }
 
-    // Викликається системою AR (Vuforia / AR Foundation), коли маркер знайдено
+    // Викликається при виявленні фото-маркера
     public void OnTrackingFound()
     {
-        Debug.Log("Маркер знайдено. Запуск відео...");
-        
+        if (fadeCoroutine != null) StopCoroutine(fadeCoroutine);
+
         if (videoPlayer.isPrepared)
         {
             videoPlayer.Play();
+            fadeCoroutine = StartCoroutine(FadeTo(1f)); // Плавна поява (Fade-In)
         }
         else
         {
-            // Якщо відео ще не завантажилось з мережі, чекаємо і запускаємо одразу як буде готово
-            videoPlayer.prepareCompleted += PlayWhenPrepared;
+            // Якщо відео ще завантажується, чекаємо і запускаємо з Fade-In
+            videoPlayer.prepareCompleted += PlayAndFadeIn;
         }
     }
 
-    // Викликається, коли маркер втрачено
+    // Викликається при втраті фото-маркера
     public void OnTrackingLost()
     {
-        Debug.Log("Маркер втрачено. Пауза відео...");
-        
-        // Відписуємось від події, щоб уникнути багів
-        videoPlayer.prepareCompleted -= PlayWhenPrepared; 
-        
+        videoPlayer.prepareCompleted -= PlayAndFadeIn;
+
+        if (fadeCoroutine != null) StopCoroutine(fadeCoroutine);
+
+        fadeCoroutine = StartCoroutine(FadeOutAndPause()); // Плавне зникання (Fade-Out)
+    }
+
+    private void PlayAndFadeIn(VideoPlayer vp)
+    {
+        vp.Play();
+        vp.prepareCompleted -= PlayAndFadeIn;
+        fadeCoroutine = StartCoroutine(FadeTo(1f));
+    }
+
+    private IEnumerator FadeOutAndPause()
+    {
+        // Чекаємо закінчення ефекту зникання і ставить відео на паузу
+        yield return FadeTo(0f);
         if (videoPlayer.isPlaying)
         {
-            videoPlayer.Pause(); 
-            // Якщо хочеш, щоб відео щоразу починалось з початку, заміни Pause() на Stop()
+            videoPlayer.Pause();
         }
     }
 
-    private void PlayWhenPrepared(VideoPlayer vp)
+    // Корутина для плавного змінення прозорості (Альфа-каналу)
+    private IEnumerator FadeTo(float targetAlpha)
     {
-        vp.Play();
-        vp.prepareCompleted -= PlayWhenPrepared;
+        if (targetMaterial == null) yield break;
+
+        Color color = targetMaterial.color;
+        float startAlpha = color.a;
+        float time = 0f;
+
+        while (time < fadeDuration)
+        {
+            time += Time.deltaTime;
+            float newAlpha = Mathf.Lerp(startAlpha, targetAlpha, time / fadeDuration);
+            SetAlpha(newAlpha);
+            yield return null;
+        }
+
+        SetAlpha(targetAlpha);
+    }
+
+    private void SetAlpha(float alpha)
+    {
+        if (targetMaterial != null)
+        {
+            Color color = targetMaterial.color;
+            color.a = alpha;
+            targetMaterial.color = color;
+        }
     }
 }
