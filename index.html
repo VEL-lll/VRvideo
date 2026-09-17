@@ -1,18 +1,22 @@
+<!DOCTYPE html>
 <html>
   <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <title>AR Video Experience</title>
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
     
     <style>
+      /* Повний захист від системних виділень, лупи та меню на мобільних */
       body {
         margin: 0; 
         overflow: hidden; 
         touch-action: none;
-        /* Блокуємо системне виділення тексту і лупу на мобільних пристроях */
         -webkit-user-select: none; 
         user-select: none;
         -webkit-touch-callout: none;
+        -webkit-tap-highlight-color: transparent;
       }
 
       #start-overlay {
@@ -28,6 +32,7 @@
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         cursor: pointer;
         transition: opacity 0.4s ease;
+        backdrop-filter: blur(5px);
       }
       #start-btn {
         background: linear-gradient(135deg, #ff416c, #ff4b2b);
@@ -39,6 +44,10 @@
         border-radius: 30px;
         box-shadow: 0 6px 20px rgba(255, 65, 108, 0.4);
         cursor: pointer;
+        transition: transform 0.2s ease;
+      }
+      #start-btn:active {
+        transform: scale(0.95);
       }
       #start-hint {
         margin-top: 12px;
@@ -49,86 +58,97 @@
       /* Підказка для сканування */
       #scan-instruction {
         position: fixed;
-        top: 24px;
+        top: max(24px, env(safe-area-inset-top));
         left: 50%;
         transform: translateX(-50%);
         z-index: 9998;
-        background: rgba(0, 0, 0, 0.7);
+        background: rgba(0, 0, 0, 0.75);
         color: white;
-        padding: 10px 20px;
-        border-radius: 20px;
+        padding: 12px 24px;
+        border-radius: 30px;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         font-size: 14px;
         font-weight: 500;
         pointer-events: none;
         transition: opacity 0.4s ease, transform 0.4s ease;
         opacity: 0;
-        backdrop-filter: blur(4px);
+        backdrop-filter: blur(8px);
         border: 1px solid rgba(255,255,255,0.15);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
       }
       #scan-instruction.visible {
         opacity: 1;
       }
 
-      /* Індикатор стану дій (Пауза/Слоу-мо/Прискорення) */
+      /* Індикатор стану дій */
       #action-status {
         position: fixed;
         top: 50%;
         left: 50%;
-        transform: translate(-50%, -50%);
+        transform: translate(-50%, -50%) scale(0.9);
         z-index: 9999;
-        background: rgba(0, 0, 0, 0.75);
+        background: rgba(0, 0, 0, 0.8);
         color: white;
-        padding: 15px 30px;
-        border-radius: 15px;
+        padding: 16px 32px;
+        border-radius: 20px;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         font-size: 20px;
         font-weight: bold;
         pointer-events: none;
         opacity: 0;
-        transition: opacity 0.2s ease;
-        backdrop-filter: blur(5px);
+        transition: opacity 0.2s ease, transform 0.2s ease;
+        backdrop-filter: blur(10px);
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 12px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      }
+      #action-status.show {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
       }
 
       /* Кнопка керування звуком */
       #sound-toggle {
         position: fixed;
-        top: 20px;
+        top: max(20px, env(safe-area-inset-top));
         right: 20px;
         z-index: 9999;
-        background: rgba(0, 0, 0, 0.6);
+        background: rgba(0, 0, 0, 0.65);
         color: white;
         border: 1px solid rgba(255, 255, 255, 0.2);
-        width: 44px;
-        height: 44px;
+        width: 48px;
+        height: 48px;
         border-radius: 50%;
         display: none;
         align-items: center;
         justify-content: center;
-        font-size: 18px;
+        font-size: 22px;
         cursor: pointer;
-        backdrop-filter: blur(4px);
-        transition: background 0.2s;
+        backdrop-filter: blur(8px);
+        transition: background 0.2s, transform 0.1s;
+      }
+      #sound-toggle:active {
+        background: rgba(255, 255, 255, 0.3);
+        transform: scale(0.9);
       }
 
       #time-badge {
         position: fixed;
-        bottom: 12px;
+        bottom: max(12px, env(safe-area-inset-bottom));
         right: 16px;
         z-index: 9999;
-        color: rgba(255, 255, 255, 0.95);
+        color: rgba(255, 255, 255, 0.8);
         font-family: monospace;
-        font-size: 14px;
+        font-size: 13px;
         font-weight: bold;
         pointer-events: none;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.8);
       }
     </style>
   </head>
   
-  <body>
+  <body oncontextmenu="return false;">
     
     <div id="start-overlay">
       <button id="start-btn">Торкніться для запуску AR</button>
@@ -139,12 +159,13 @@
     <div id="action-status"></div>
     <div id="sound-toggle">🔇</div>
     
-    <div id="time-badge">Test #23</div>
+    <div id="time-badge">Test #24 | Final</div>
 
-    <a-scene mindar-image="imageTargetSrc: targets.mind; filterMinCF: 0.01; filterBeta: 2000; warmupTolerance: 3; missTolerance: 5;" color-space="sRGB" renderer="colorManagement: true; antialias: false; precision: mediump; physicallyCorrectLights: false;" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
+    <a-scene mindar-image="imageTargetSrc: targets.mind; filterMinCF: 0.005; filterBeta: 3000; warmupTolerance: 3; missTolerance: 5;" color-space="sRGB" renderer="colorManagement: true; antialias: false; precision: mediump; physicallyCorrectLights: false;" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
       
       <a-assets>
-        <video id="my-video" src="https://files.catbox.moe/y5fotd.mp4" preload="auto" response-type="arraybuffer" crossorigin="anonymous" webkit-playsinline playsinline loop muted></video>
+        <!-- Додано важливі атрибути для безперебійного відтворення на iOS -->
+        <video id="my-video" src="https://files.catbox.moe/y5fotd.mp4" preload="auto" response-type="arraybuffer" crossorigin="anonymous" webkit-playsinline playsinline loop muted disablePictureInPicture></video>
       </a-assets>
 
       <a-camera id="main-camera" position="0 0 0" look-controls="enabled: false"></a-camera>
@@ -153,8 +174,8 @@
         <a-plane id="video-plane" src="#my-video" position="0 0 0" height="1.33" width="0.75" 
                  rotation="0 0 0" scale="1 1 1"
                  material="shader: flat; transparent: true; opacity: 0;"
-                 animation__fadein="property: material.opacity; to: 1; dur: 1200; easing: easeInOutCubic; startEvents: showVideo"
-                 animation__fadeout="property: material.opacity; to: 0; dur: 800; easing: easeInOutCubic; startEvents: hideVideo">
+                 animation__fadein="property: material.opacity; to: 1; dur: 1000; easing: easeOutCubic; startEvents: showVideo"
+                 animation__fadeout="property: material.opacity; to: 0; dur: 600; easing: easeInCubic; startEvents: hideVideo">
         </a-plane>
       </a-entity>
       
@@ -175,57 +196,79 @@
       let isTargetFound = false;
       let statusTimeout = null;
 
-      // Змінні для 3D Звуку
+      // 3D Audio
       let audioCtx = null;
       let spatialSound = null;
       let isAudioConfigured = false;
 
+      // UI Status Function (Покращена плавність)
       function showStatus(text, duration = 1200) {
         actionStatus.textContent = text;
-        actionStatus.style.opacity = "1";
+        actionStatus.classList.add("show");
         if (statusTimeout) clearTimeout(statusTimeout);
         if (duration > 0) {
           statusTimeout = setTimeout(() => {
-            actionStatus.style.opacity = "0";
+            actionStatus.classList.remove("show");
           }, duration);
         }
       }
 
-      // Змінні для жестів
+      // Gesture Variables
       let initialDistance = 0;
       let baseScale = 1;
       let currentScale = 1;
       
       let touchStartTime = 0;
       let holdTimeout = null;
-      let isHolding = false;       // Для Слоу-мо (1 палець)
-      let isAccelerating = false;  // Для Прискорення (2 пальці)
+      let isHolding = false;       
+      let isAccelerating = false;  
       let isTwoFingerGesture = false;
 
-      // Розблокування відео та налаштування 3D ЗВУКУ
+      // Скидання всіх швидкостей до норми
+      function resetPlaybackRate() {
+        if (videoElement.playbackRate !== 1.0) {
+          videoElement.playbackRate = 1.0;
+          isHolding = false;
+          isAccelerating = false;
+          actionStatus.classList.remove("show");
+        }
+      }
+
+      // Unlock Interaction & Audio Context Setup
       overlay.addEventListener("click", () => {
+        if (isUnlocked) return;
         isUnlocked = true;
         
-        audioCtx = THREE.AudioContext.getContext();
-        audioCtx.resume().then(() => {
-          if (!isAudioConfigured) {
-            isAudioConfigured = true;
-            
-            const listener = new THREE.AudioListener();
-            mainCamera.getObject3D('camera').add(listener);
+        // Ініціалізація 3D аудіо
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (AudioContext) {
+          audioCtx = new AudioContext();
+          audioCtx.resume().then(() => {
+            if (!isAudioConfigured) {
+              isAudioConfigured = true;
+              
+              const listener = new THREE.AudioListener();
+              mainCamera.getObject3D('camera').add(listener);
 
-            spatialSound = new THREE.PositionalAudio(listener);
-            spatialSound.setRefDistance(1.5);    
-            spatialSound.setRolloffFactor(3);    
-            spatialSound.setDistanceModel('exponential');
-            
-            if (!window.mediaElementSource) {
-              window.mediaElementSource = audioCtx.createMediaElementSource(videoElement);
+              spatialSound = new THREE.PositionalAudio(listener);
+              spatialSound.setRefDistance(1.5);    
+              spatialSound.setRolloffFactor(3);    
+              spatialSound.setDistanceModel('exponential');
+              
+              const mediaSource = audioCtx.createMediaElementSource(videoElement);
+              mediaSource.connect(spatialSound.getInput());
+              
+              // Забезпечуємо, щоб 3D-звук було створено лише тоді, коли площина готова
+              if (videoPlane.getObject3D('mesh')) {
+                videoPlane.getObject3D('mesh').add(spatialSound);
+              } else {
+                videoPlane.addEventListener('loaded', () => {
+                  videoPlane.getObject3D('mesh').add(spatialSound);
+                });
+              }
             }
-            window.mediaElementSource.connect(spatialSound.getInput());
-            videoPlane.getObject3D('mesh').add(spatialSound);
-          }
-        });
+          });
+        }
 
         videoElement.muted = false;
         overlay.style.opacity = "0";
@@ -238,21 +281,24 @@
         videoElement.play().then(() => {
           videoElement.pause();
           videoElement.currentTime = 0;
-        }).catch(err => console.log("Audio unlock error:", err));
+        }).catch(err => console.log("Unlock error:", err));
       });
 
+      // Звук On/Off
       soundToggle.addEventListener("click", (e) => {
         e.stopPropagation();
+        e.preventDefault();
         videoElement.muted = !videoElement.muted;
         soundToggle.textContent = videoElement.muted ? "🔇" : "🔊";
       });
 
+      // Target Logic
       targetEntity.addEventListener("targetFound", () => {
         if (!isUnlocked) return;
         isTargetFound = true;
         if (fadeOutTimeout) clearTimeout(fadeOutTimeout);
         scanInstruction.classList.remove("visible");
-        videoElement.play();
+        videoElement.play().catch(e => console.log("Play failed:", e));
         videoPlane.emit("showVideo");
       });
       
@@ -261,40 +307,86 @@
         isTargetFound = false;
         scanInstruction.classList.add("visible");
         videoPlane.emit("hideVideo");
-        fadeOutTimeout = setTimeout(() => videoElement.pause(), 800);
+        
+        // Гарантоване скидання швидкості при втраті маркера
+        resetPlaybackRate();
+        clearTimeout(holdTimeout);
+
+        fadeOutTimeout = setTimeout(() => {
+          videoElement.pause();
+        }, 600);
       });
 
-      // === ЖЕСТИ ===
+      // === GESTURE SYSTEM (Stable 60FPS) ===
+
+      function handleGestureEnd(e) {
+        if (!isTargetFound) return;
+
+        // Вимикаємо прискорення, якщо відпустили один із двох пальців
+        if (isTwoFingerGesture && e.touches.length < 2) {
+          if (isAccelerating) {
+            videoElement.playbackRate = 1.0;
+            isAccelerating = false;
+            showStatus("▶️ 1.0x Норма", 800);
+          }
+        }
+
+        // Обробка підняття єдиного пальця
+        if (!isTwoFingerGesture && e.changedTouches.length === 1) {
+          clearTimeout(holdTimeout);
+          
+          if (isHolding) {
+            videoElement.playbackRate = 1.0;
+            isHolding = false;
+            showStatus("▶️ 1.0x Норма", 800);
+          } else if (e.touches.length === 0) {
+            // Тап для Паузи/Плею
+            const touchDuration = Date.now() - touchStartTime;
+            if (touchDuration < 300) {
+              if (videoElement.paused) {
+                videoElement.play();
+                showStatus("▶️ Відтворення", 1000);
+              } else {
+                videoElement.pause();
+                showStatus("⏸ Пауза", 0); // Висить, поки пауза
+              }
+            }
+          }
+        }
+
+        // Повний скид при нулі пальців
+        if (e.touches.length === 0) {
+          isTwoFingerGesture = false;
+          resetPlaybackRate();
+        }
+      }
 
       window.addEventListener('touchstart', (e) => {
-        if (!isTargetFound || e.target.id === 'sound-toggle') return;
+        if (!isTargetFound || e.target.closest('#sound-toggle')) return;
 
         if (e.touches.length === 1) {
-          // 1 ПАЛЕЦЬ: Готуємо Слоу-мо
           isTwoFingerGesture = false;
           touchStartTime = Date.now();
           
           holdTimeout = setTimeout(() => {
-            if (!isTwoFingerGesture) {
+            if (!isTwoFingerGesture && !videoElement.paused) {
               videoElement.playbackRate = 0.5;
               isHolding = true;
               showStatus("🐌 0.5x Slow-mo", 0);
             }
-          }, 300);
+          }, 350); // Трохи збільшено час, щоб уникнути конфлікту з тапом
 
         } else if (e.touches.length === 2) {
-          // 2 ПАЛЬЦІ: Зум + Прискорення
           isTwoFingerGesture = true;
-          clearTimeout(holdTimeout); // Скасовуємо слоу-мо
-          
-          if (isHolding) {
-            isHolding = false;
-          }
+          clearTimeout(holdTimeout); 
+          isHolding = false;
 
-          // Вмикаємо прискорення
-          videoElement.playbackRate = 2.0;
-          isAccelerating = true;
-          showStatus("⏩ 2.0x Ускорення", 0);
+          // Вмикаємо прискорення (тільки якщо відео йде)
+          if (!videoElement.paused) {
+            videoElement.playbackRate = 2.0;
+            isAccelerating = true;
+            showStatus("⏩ 2.0x Ускорення", 0);
+          }
 
           // Фіксуємо дистанцію для зуму
           const dx = e.touches[0].clientX - e.touches[1].clientX;
@@ -308,67 +400,33 @@
         if (!isTargetFound) return;
         
         if (e.touches.length === 2 && isTwoFingerGesture) {
-          e.preventDefault(); // Блокуємо скрол
+          e.preventDefault(); 
           
           const dx = e.touches[0].clientX - e.touches[1].clientX;
           const dy = e.touches[0].clientY - e.touches[1].clientY;
-          
-          // Обчислення Зуму
           const dist = Math.hypot(dx, dy);
+          
           let factor = dist / initialDistance;
           currentScale = Math.max(0.4, Math.min(3.5, baseScale * factor));
           
-          videoPlane.setAttribute('scale', `${currentScale} ${currentScale} ${currentScale}`);
+          // ОПТИМІЗАЦІЯ: Пряме звернення до 3D-об'єкта (набагато швидше за setAttribute)
+          if (videoPlane.object3D) {
+            videoPlane.object3D.scale.set(currentScale, currentScale, currentScale);
+          }
         } else if (e.touches.length === 1) {
-          clearTimeout(holdTimeout); // Скасовуємо слоу-мо при русі одним пальцем
+          // Якщо палець суттєво змістився — це свайп, а не утримання. Скасовуємо слоу-мо.
+          clearTimeout(holdTimeout); 
         }
       }, { passive: false });
 
-      window.addEventListener('touchend', (e) => {
-        if (!isTargetFound) return;
-
-        // Якщо відпустили хоча б один палець із двох (вимкнення прискорення)
-        if (isTwoFingerGesture && e.touches.length < 2) {
-          if (isAccelerating) {
-            videoElement.playbackRate = 1.0;
-            isAccelerating = false;
-            showStatus("▶️ 1.0x Норма");
-          }
-        }
-
-        // Якщо відпустили єдиний палець
-        if (!isTwoFingerGesture && e.changedTouches.length === 1) {
-          clearTimeout(holdTimeout);
-          
-          if (isHolding) {
-            // Відпустили Слоу-мо
-            videoElement.playbackRate = 1.0;
-            isHolding = false;
-            showStatus("▶️ 1.0x Норма");
-          } else if (e.touches.length === 0) {
-            // Швидкий тап (Пауза / Плей)
-            const touchDuration = Date.now() - touchStartTime;
-            if (touchDuration < 300) {
-              if (videoElement.paused) {
-                videoElement.play();
-                showStatus("▶️ Відтворення");
-              } else {
-                videoElement.pause();
-                showStatus("⏸ Пауза");
-              }
-            }
-          }
-        }
-
-        // Повний скид жестів
-        if (e.touches.length === 0) {
-          isTwoFingerGesture = false;
-          // Додаткова перевірка, щоб швидкість гарантовано скинулась
-          if (videoElement.playbackRate !== 1.0) {
-            videoElement.playbackRate = 1.0;
-            showStatus("▶️ 1.0x Норма");
-          }
-        }
+      // Нормальне завершення дотику
+      window.addEventListener('touchend', handleGestureEnd);
+      
+      // Переривання дотику (наприклад, системне сповіщення)
+      window.addEventListener('touchcancel', (e) => {
+        clearTimeout(holdTimeout);
+        resetPlaybackRate();
+        isTwoFingerGesture = false;
       });
     </script>
   </body>
