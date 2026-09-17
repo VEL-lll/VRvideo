@@ -1,16 +1,10 @@
 <html>
   <head>
-    <!-- Метатег для коректного масштабування вебсторінки на мобільних пристроях -->
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    
-    <!-- Підключення бібліотеки A-Frame для тривимірного веб-рендерингу (VR/AR) -->
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
-    
-    <!-- Підключення бібліотеки MindAR для відстеження зображень (Image Tracking) в AR -->
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
     
     <style>
-      /* Стиль для стартової кнопки, яка знімає обмеження браузера на звук */
       #start-overlay {
         position: fixed;
         inset: 0;
@@ -41,8 +35,6 @@
         font-size: 13px;
         opacity: 0.7;
       }
-
-      /* Мітка версії та номера тесту у нижньому правому кутку (тільки час і хвилини) */
       #time-badge {
         position: fixed;
         bottom: 12px;
@@ -61,32 +53,28 @@
   
   <body style="margin: 0; overflow: hidden;">
     
-    <!-- Стартовий екран для розблокування звуку на мобільних пристроях -->
     <div id="start-overlay">
       <button id="start-btn">Торкніться для запуску AR</button>
       <div id="start-hint">(потрібно для увімкнення звуку та камери)</div>
     </div>
 
-    <!-- Мітка версії -->
-    <div id="time-badge">07:01 | Test #15</div>
+    <!-- Метка версії (тільки час і хвилини) -->
+    <div id="time-badge">07:06 | Test #17</div>
 
     <!-- 
-      Збалансована AR-сцена:
-      - filterMinCF: 0.001 та filterBeta: 1000 прибирають затримку (лаг) під час руху камери, 
-        зберігаючи стабільність без дрижання.
+      Ультрашвидкий трекінг без запізнень та викривлень:
+      - filterMinCF: 0.01 та filterBeta: 2000 миттєво реагують на будь-яке переміщення картини чи камери.
+      - warmupTolerance / missTolerance оптимізовані для запобігання деформаціям.
     -->
-    <a-scene mindar-image="imageTargetSrc: targets.mind; filterMinCF: 0.001; filterBeta: 1000; warmupTolerance: 5; missTolerance: 10;" color-space="sRGB" renderer="colorManagement: true; antialias: false; precision: mediump; physicallyCorrectLights: false;" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
+    <a-scene mindar-image="imageTargetSrc: targets.mind; filterMinCF: 0.01; filterBeta: 2000; warmupTolerance: 3; missTolerance: 5;" color-space="sRGB" renderer="colorManagement: true; antialias: false; precision: mediump; physicallyCorrectLights: false;" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
       
       <a-assets>
-        <!-- Захисний атрибут muted виключає будь-які гличчі зі звуком на початку -->
         <video id="my-video" src="https://files.catbox.moe/y5fotd.mp4" preload="auto" response-type="arraybuffer" crossorigin="anonymous" webkit-playsinline playsinline loop muted></video>
       </a-assets>
 
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-      <!-- Сутність AR, яка прив'язується до знайденого маркера -->
       <a-entity mindar-image-target="targetIndex: 0">
-        <!-- Плавні та довгі кінематографічні анімації появи та зникнення -->
         <a-plane id="video-plane" src="#my-video" position="0 0 0" height="1.33" width="0.75" 
                  rotation="0 0 0" scale="1 1 1"
                  material="shader: flat; transparent: true; opacity: 0;"
@@ -107,10 +95,8 @@
       let fadeOutTimeout = null;
       let isUnlocked = false;
 
-      // Розблокування звуку та зняття mute за кліком по оверлею
       overlay.addEventListener("click", () => {
         isUnlocked = true;
-        
         videoElement.muted = false;
 
         overlay.style.opacity = "0";
@@ -124,22 +110,18 @@
         }).catch(err => console.log("Audio unlock error:", err));
       });
 
-      // Подія: знайдено маркер
       targetEntity.addEventListener("targetFound", event => {
         if (!isUnlocked) return;
-        
         if (fadeOutTimeout) clearTimeout(fadeOutTimeout);
         
         videoElement.play().catch(err => console.log("Play error:", err));
         videoPlane.emit("showVideo");
       });
       
-      // Подія: втрачено маркер
       targetEntity.addEventListener("targetLost", event => {
         if (!isUnlocked) return;
         
         videoPlane.emit("hideVideo");
-        
         fadeOutTimeout = setTimeout(() => {
           videoElement.pause();
         }, 800);
