@@ -40,18 +40,15 @@
       background: #000;
     }
 
-    /* === СКАН-ЕФЕКТ (покращений) === */
+    /* === СКАН-ЕФЕКТ === */
     #scan-overlay {
-      position: fixed;
-      inset: 0;
+      position: fixed; inset: 0;
       pointer-events: none;
       z-index: 5000;
       opacity: 0;
       transition: opacity 0.6s ease;
     }
     #scan-overlay.show { opacity: 1; }
-
-    /* Рамка */
     #scan-frame {
       position: absolute;
       top: 50%; left: 50%;
@@ -70,8 +67,6 @@
         0 0 80px rgba(168, 85, 247, 0.3),
         inset 0 0 40px rgba(108, 99, 255, 0.15);
     }
-
-    /* 4 кути */
     .corner {
       position: absolute;
       width: 42px; height: 42px;
@@ -83,23 +78,15 @@
     .corner.bl { bottom: -3px; left: -3px; border-right: none; border-top: none; border-bottom-left-radius: 20px; }
     .corner.br { bottom: -3px; right: -3px; border-left: none; border-top: none; border-bottom-right-radius: 20px; }
 
-    /* Лазерна лінія */
     #scan-line {
       position: absolute;
       top: 50%; left: 50%;
       transform: translateX(-50%);
-      width: 62vmin;
-      height: 3px;
+      width: 62vmin; height: 3px;
       background: linear-gradient(90deg,
-        transparent 0%,
-        rgba(108, 99, 255, 0.6) 20%,
-        #a855f7 50%,
-        rgba(108, 99, 255, 0.6) 80%,
-        transparent 100%);
-      box-shadow:
-        0 0 20px #6c63ff,
-        0 0 40px #a855f7,
-        0 0 60px rgba(168, 85, 247, 0.5);
+        transparent 0%, rgba(108, 99, 255, 0.6) 20%,
+        #a855f7 50%, rgba(108, 99, 255, 0.6) 80%, transparent 100%);
+      box-shadow: 0 0 20px #6c63ff, 0 0 40px #a855f7, 0 0 60px rgba(168, 85, 247, 0.5);
       border-radius: 3px;
       animation: scanMove 4s ease-in-out infinite;
     }
@@ -107,13 +94,9 @@
       content: '';
       position: absolute;
       inset: -20px 0;
-      background: linear-gradient(180deg,
-        transparent 0%,
-        rgba(108, 99, 255, 0.18) 50%,
-        transparent 100%);
+      background: linear-gradient(180deg, transparent 0%, rgba(108, 99, 255, 0.18) 50%, transparent 100%);
       filter: blur(10px);
     }
-
     @keyframes framePulse {
       0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.75; }
       50%      { transform: translate(-50%, -50%) scale(1.035); opacity: 1; }
@@ -126,7 +109,6 @@
       100% { top: 82%; opacity: 0; }
     }
 
-    /* Підказка */
     #scan-hint {
       position: fixed;
       bottom: calc(100px + env(safe-area-inset-bottom));
@@ -145,7 +127,7 @@
     }
     #scan-hint.hidden { opacity: 0; }
 
-    /* === HUD-КНОПКИ === */
+    /* === HUD === */
     #hud {
       position: fixed;
       bottom: calc(20px + env(safe-area-inset-bottom));
@@ -171,7 +153,6 @@
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
       color: #fff;
-      font-size: 22px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -187,17 +168,40 @@
     }
     .hud-btn svg { width: 24px; height: 24px; fill: #fff; }
 
+    /* === ІНДИКАТОР ВЕРСІЇ — більший і помітніший === */
     #build-time {
       position: fixed;
-      right: calc(8px + env(safe-area-inset-right));
-      bottom: calc(6px + env(safe-area-inset-bottom));
-      font-size: 10px;
-      color: rgba(255,255,255,0.45);
-      font-family: ui-monospace, monospace;
+      right: calc(10px + env(safe-area-inset-right));
+      bottom: calc(10px + env(safe-area-inset-bottom));
+      font-size: 11px;
+      color: rgba(255,255,255,0.85);
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+      letter-spacing: 0.3px;
       z-index: 10002;
       pointer-events: none;
       user-select: none;
-      text-shadow: 0 1px 2px rgba(0,0,0,0.7);
+      background: rgba(10, 10, 20, 0.65);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      padding: 5px 10px;
+      border-radius: 8px;
+      border: 1px solid rgba(108, 99, 255, 0.35);
+      box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    #build-time::before {
+      content: '';
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: #6c63ff;
+      box-shadow: 0 0 8px #6c63ff;
+      animation: dotPulse 2s ease-in-out infinite;
+    }
+    @keyframes dotPulse {
+      0%, 100% { opacity: 0.5; transform: scale(0.9); }
+      50%      { opacity: 1; transform: scale(1.1); }
     }
 
     #loading {
@@ -249,6 +253,17 @@
     #start-overlay .hint {
       margin-top: 22px; color: rgba(255,255,255,0.35); font-size: 12px;
     }
+    #start-overlay .version-badge {
+      margin-top: 12px;
+      font-size: 11px;
+      color: rgba(108, 99, 255, 0.9);
+      font-family: ui-monospace, monospace;
+      letter-spacing: 0.5px;
+      padding: 4px 12px;
+      border: 1px solid rgba(108, 99, 255, 0.35);
+      border-radius: 12px;
+      background: rgba(108, 99, 255, 0.08);
+    }
 
     #error-msg {
       position: fixed;
@@ -287,9 +302,9 @@
     <p>Наведіть камеру на фотографію<br>Масштаб — двома пальцями</p>
     <button id="start-btn">▶ Почати</button>
     <div class="hint">Потрібен доступ до камери</div>
+    <div class="version-badge" id="start-version">v1.0</div>
   </div>
 
-  <!-- Скан-ефект -->
   <div id="scan-overlay">
     <div id="scan-frame">
       <div class="corner tl"></div>
@@ -302,7 +317,7 @@
   <div id="scan-hint">Наведіть камеру на фотографію</div>
 
   <div id="error-msg"></div>
-  <div id="build-time">оновлено: —</div>
+  <div id="build-time">v1.0 · —</div>
   <div id="zoom-indicator">1.00×</div>
 
   <div id="hud">
@@ -344,15 +359,31 @@
   </a-scene>
 
   <script>
-    (function () {
-      const d = new Date();
+    // ============================================================
+    // 🔧 НАЛАШТУВАННЯ ВЕРСІЇ
+    // Змініть BUILD_VERSION та BUILD_TIME вручну при кожному релізі.
+    // ============================================================
+    const BUILD_VERSION = 'v1.0';                        // версія коду
+    const BUILD_TIME = new Date('2026-09-17T17:28:00');  // ← час написання ЦІЄЇ версії
+
+    (function renderBuildInfo() {
       const p = (n) => String(n).padStart(2, '0');
+      const d = BUILD_TIME;
+      const formatted =
+        `${p(d.getDate())}.${p(d.getMonth()+1)}.${d.getFullYear()} ` +
+        `${p(d.getHours())}:${p(d.getMinutes())}`;
+
+      // правий нижній кут
       document.getElementById('build-time').textContent =
-        `оновлено: ${p(d.getDate())}.${p(d.getMonth()+1)}.${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`;
+        `${BUILD_VERSION} · ${formatted}`;
+
+      // на стартовому екрані
+      const badge = document.getElementById('start-version');
+      if (badge) badge.textContent = `${BUILD_VERSION} · ${formatted}`;
     })();
 
     // ============================================================
-    // ar-video-texture — з коректним покриттям та кольором
+    // ar-video-texture
     // ============================================================
     AFRAME.registerComponent('ar-video-texture', {
       schema: { src: { type: 'string' } },
@@ -386,31 +417,23 @@
           texture.format = THREE.RGBAFormat;
           texture.generateMipmaps = false;
 
-          // НЕ використовуємо SRGBColorSpace — щоб не затемнювати
-
-          // "object-fit: cover" — обрізаємо відео під квадрат 1×1
           const updateCover = () => {
             const vw = video.videoWidth;
             const vh = video.videoHeight;
             if (!vw || !vh) return;
             const videoAspect = vw / vh;
-            const planeAspect = 1; // площина 1×1
-
+            const planeAspect = 1;
             if (videoAspect > planeAspect) {
-              // відео ширше — обрізаємо по боках
               const visibleW = planeAspect / videoAspect;
               texture.repeat.set(visibleW, 1);
               texture.offset.set((1 - visibleW) / 2, 0);
             } else {
-              // відео вище — обрізаємо зверху/знизу
               const visibleH = videoAspect / planeAspect;
               texture.repeat.set(1, visibleH);
               texture.offset.set(0, (1 - visibleH) / 2);
             }
             texture.needsUpdate = true;
-            console.log(`✅ Cover: videoAspect=${videoAspect.toFixed(3)}`);
           };
-
           video.addEventListener('loadedmetadata', updateCover);
           if (video.videoWidth) updateCover();
 
@@ -422,7 +445,6 @@
 
           this.texture = texture;
           this.material = mesh.material;
-
           this.scaleValue = 0.01;
           this.setScale(0.01);
         });
@@ -567,7 +589,6 @@
       }
     });
 
-    // PINCH-ZOOM
     let zoomFactor = 1.0, initialPinchDistance = 0, initialZoomFactor = 1.0;
     const getDistance = (t) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
 
@@ -633,7 +654,6 @@
       scanOverlay.classList.remove('show');
       scanHint.classList.add('hidden');
       hud.classList.add('show');
-
       const vc = videoPlane.components['ar-video-texture'];
       if (!vc) return;
       if (vc.isPaused()) {
