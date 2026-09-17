@@ -1,8 +1,10 @@
 <html>
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Підключаємо A-Frame, MindAR та компонент частинок для ефекту сакури -->
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/aframe-particle-system-component@1.0.x/dist/aframe-particle-system-component.min.js"></script>
     
     <style>
       #start-overlay {
@@ -36,7 +38,7 @@
         opacity: 0.7;
       }
 
-      /* Підказка для сканування (зникає при знаходженні маркера) */
+      /* Підказка для сканування */
       #scan-instruction {
         position: fixed;
         top: 24px;
@@ -61,7 +63,7 @@
         opacity: 1;
       }
 
-      /* Кнопка керування звуком (Mute/Unmute) */
+      /* Кнопка керування звуком */
       #sound-toggle {
         position: fixed;
         top: 20px;
@@ -73,7 +75,7 @@
         width: 44px;
         height: 44px;
         border-radius: 50%;
-        display: none; /* З'явиться після запуску AR */
+        display: none;
         align-items: center;
         justify-content: center;
         font-size: 18px;
@@ -104,22 +106,15 @@
   
   <body style="margin: 0; overflow: hidden;">
     
-    <!-- Стартовий екран -->
     <div id="start-overlay">
       <button id="start-btn">Торкніться для запуску AR</button>
       <div id="start-hint">(потрібно для увімкнення звуку та камери)</div>
     </div>
 
-    <!-- Інтерактивна підказка -->
     <div id="scan-instruction">📍 Наведіть камеру на зображення</div>
-
-    <!-- Кнопка звуку -->
     <div id="sound-toggle">🔇</div>
+    <div id="time-badge">07:15 | Test #19</div>
 
-    <!-- Мітка часу (тільки час і хвилини) -->
-    <div id="time-badge">07:11 | Test #18</div>
-
-    <!-- Ультрашвидкий та стабільний трекінг -->
     <a-scene mindar-image="imageTargetSrc: targets.mind; filterMinCF: 0.01; filterBeta: 2000; warmupTolerance: 3; missTolerance: 5;" color-space="sRGB" renderer="colorManagement: true; antialias: false; precision: mediump; physicallyCorrectLights: false;" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
       
       <a-assets>
@@ -129,6 +124,8 @@
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
       <a-entity mindar-image-target="targetIndex: 0">
+        
+        <!-- Відео-площина -->
         <a-plane id="video-plane" src="#my-video" position="0 0 0" height="1.33" width="0.75" 
                  rotation="0 0 0" scale="1 1 1"
                  material="shader: flat; transparent: true; opacity: 0;"
@@ -136,6 +133,10 @@
                  animation__fadein="property: material.opacity; to: 1; dur: 1200; easing: easeInOutCubic; startEvents: showVideo"
                  animation__fadeout="property: material.opacity; to: 0; dur: 800; easing: easeInOutCubic; startEvents: hideVideo">
         </a-plane>
+
+        <!-- Романтичний ефект сакури / пелюсток навколо відео -->
+        <a-entity particle-system="preset: snow; color: #ffb7c5, #ff69b4, #ffffff; particleCount: 150; speed: 0.6; accelerationValue: 0 -0.05 0; maxAge: 3.5; size: 0.8;" position="0 0 0"></a-entity>
+
       </a-entity>
       
     </a-scene>
@@ -151,7 +152,11 @@
       let fadeOutTimeout = null;
       let isUnlocked = false;
 
-      // Розблокування за кліком
+      // Змінні для жестів Zoom (масштабування двома пальцями)
+      let initialDistance = 0;
+      let baseScale = 1;
+      let currentScale = 1;
+
       overlay.addEventListener("click", () => {
         isUnlocked = true;
         videoElement.muted = false;
@@ -161,7 +166,6 @@
           overlay.style.display = "none";
         }, 400);
 
-        // Показуємо підказку сканування та кнопку звуку
         scanInstruction.classList.add("visible");
         soundToggle.style.display = "flex";
         soundToggle.textContent = "🔊";
@@ -172,31 +176,52 @@
         }).catch(err => console.log("Audio unlock error:", err));
       });
 
-      // Перемикач звуку
       soundToggle.addEventListener("click", () => {
         videoElement.muted = !videoElement.muted;
         soundToggle.textContent = videoElement.muted ? "🔇" : "🔊";
       });
 
-      // Знайдено маркер
       targetEntity.addEventListener("targetFound", event => {
         if (!isUnlocked) return;
         if (fadeOutTimeout) clearTimeout(fadeOutTimeout);
         
-        scanInstruction.classList.remove("visible"); // ховаємо підказку під час перегляду
+        scanInstruction.classList.remove("visible");
         videoElement.play().catch(err => console.log("Play error:", err));
         videoPlane.emit("showVideo");
       });
       
-      // Втрачено маркер
       targetEntity.addEventListener("targetLost", event => {
         if (!isUnlocked) return;
         
-        scanInstruction.classList.add("visible"); // повертаємо підказку пошуку
+        scanInstruction.classList.add("visible");
         videoPlane.emit("hideVideo");
         fadeOutTimeout = setTimeout(() => {
           videoElement.pause();
         }, 800);
+      });
+
+      // Обробка жестів Pinch-to-Zoom (зум двома пальцями)
+      window.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 2) {
+          initialDistance = Math.hypot(
+            e.touches[0].clientX - e.touches[1].clientX,
+            e.touches[0].clientY - e.touches[1].clientY
+          );
+          baseScale = currentScale;
+        }
+      });
+
+      window.addEventListener('touchmove', (e) => {
+        if (e.touches.length === 2 && initialDistance > 0) {
+          const dist = Math.hypot(
+            e.touches[0].clientX - e.touches[1].clientX,
+            e.touches[0].clientY - e.touches[1].clientY
+          );
+          let factor = dist / initialDistance;
+          // Обмежуємо зум в межах від 0.4x до 3.0x
+          currentScale = Math.max(0.4, Math.min(3.0, baseScale * factor));
+          videoPlane.setAttribute('scale', `${currentScale} ${currentScale} ${currentScale}`);
+        }
       });
     </script>
   </body>
