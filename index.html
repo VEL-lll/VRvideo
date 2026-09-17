@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-    <title>AR Video Experience with 3D Pop-out</title>
+    <title>AR Video Experience</title>
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
     
@@ -155,9 +155,9 @@
     <div id="action-status"></div>
     <div id="sound-toggle">🔇</div>
     
-    <div id="time-badge">17.09.2026, 08:33:31</div>
+    <div id="time-badge">17.09.2026, 08:42:14</div>
 
-    <a-scene mindar-image="imageTargetSrc: targets.mind; filterMinCF: 0.005; filterBeta: 3000; warmupTolerance: 3; missTolerance: 5;" color-space="sRGB" renderer="colorManagement: true; antialias: false; precision: mediump; physicallyCorrectLights: false;" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
+    <a-scene mindar-image="imageTargetSrc: targets.mind; filterMinCF: 0.005; filterBeta: 3000; warmupTolerance: 3; missTolerance: 30;" color-space="sRGB" renderer="colorManagement: true; antialias: false; precision: mediump; physicallyCorrectLights: false;" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
       
       <a-assets>
         <video id="my-video" src="https://files.catbox.moe/y5fotd.mp4" preload="auto" response-type="arraybuffer" crossorigin="anonymous" webkit-playsinline playsinline loop muted disablePictureInPicture></video>
@@ -166,53 +166,16 @@
       <a-camera id="main-camera" position="0 0 0" look-controls="enabled: false"></a-camera>
 
       <a-entity mindar-image-target="targetIndex: 0">
-        
-        <!-- Головна площина відео -->
-        <a-plane id="video-plane" src="#my-video" position="0 0 0" height="1.33" width="0.75" 
+        <!-- Основна відео-площина з ефектом об'ємного виходу вперед -->
+        <a-plane id="video-plane" src="#my-video" position="0 0 0.05" height="1.33" width="0.75" 
                  rotation="0 0 0" scale="1 1 1"
-                 material="shader: flat; transparent: true; opacity: 0;"
-                 animation__fadein="property: material.opacity; to: 1; dur: 1000; easing: easeOutCubic; startEvents: showVideo"
-                 animation__fadeout="property: material.opacity; to: 0; dur: 600; easing: easeInCubic; startEvents: hideVideo">
+                 material="shader: flat; transparent: true; opacity: 1;">
         </a-plane>
 
-        <!-- === 3D POP-OUT ЕЛЕМЕНТИ (ВИЛІТАЮТЬ ВПРЕД) === -->
-        <a-entity id="popout-container">
-          
-          <!-- 1. Світлова 3D-рамка, яка висить перед відео -->
-          <a-ring position="0 0 0.15" radius-inner="0.4" radius-outer="0.42" material="color: #ff416c; shader: flat; transparent: true; opacity: 0"
-                  animation__ring_in="property: material.opacity; to: 0.8; dur: 800; easing: easeOutQuad; startEvents: popIn"
-                  animation__ring_out="property: material.opacity; to: 0; dur: 400; easing: easeInQuad; startEvents: popOut"
-                  animation__rotate="property: rotation; to: 0 0 360; loop: true; dur: 12000; easing: linear">
-          </a-ring>
-
-          <!-- 2. Лівий вилітаючий 3D-елемент (Кристал/Октаедр) -->
-          <a-octahedron position="0 0 0" scale="0.08 0.08 0.08" material="color: #00f2fe; wireframe: true; transparent: true; opacity: 0"
-                         animation__pop_pos="property: position; to: -0.5 0.5 0.35; dur: 1000; easing: easeOutBack; startEvents: popIn"
-                         animation__pop_op="property: material.opacity; to: 0.9; dur: 800; startEvents: popIn"
-                         animation__pop_out_op="property: material.opacity; to: 0; dur: 400; startEvents: popOut"
-                         animation__float="property: position; to: -0.5 0.55 0.35; dir: alternate; loop: true; dur: 2000; easing: easeInOutSine"
-                         animation__rot="property: rotation; to: 360 360 0; loop: true; dur: 8000; easing: linear">
-          </a-octahedron>
-
-          <!-- 3. Правий вилітаючий 3D-елемент (Сфера з рожевим сяйвом) -->
-          <a-icosahedron position="0 0 0" scale="0.07 0.07 0.07" material="color: #ff4b2b; wireframe: true; transparent: true; opacity: 0"
-                          animation__pop_pos2="property: position; to: 0.5 -0.4 0.4; dur: 1100; easing: easeOutBack; startEvents: popIn"
-                          animation__pop_op2="property: material.opacity; to: 0.9; dur: 800; startEvents: popIn"
-                          animation__pop_out_op2="property: material.opacity; to: 0; dur: 400; startEvents: popOut"
-                          animation__float2="property: position; to: 0.5 -0.35 0.4; dir: alternate; loop: true; dur: 2200; easing: easeInOutSine"
-                          animation__rot2="property: rotation; to: 0 360 360; loop: true; dur: 7000; easing: linear">
-          </a-icosahedron>
-
-          <!-- 4. Верхні 3D-іскри/зірки, що ширяють -->
-          <a-tetrahedron position="0 0 0" scale="0.05 0.05 0.05" material="color: #ffeb3b; shader: flat; transparent: true; opacity: 0"
-                         animation__pop_pos3="property: position; to: 0.35 0.75 0.25; dur: 900; easing: easeOutBack; startEvents: popIn"
-                         animation__pop_op3="property: material.opacity; to: 0.8; dur: 800; startEvents: popIn"
-                         animation__pop_out_op3="property: material.opacity; to: 0; dur: 400; startEvents: popOut"
-                         animation__rot3="property: rotation; to: 360 0 360; loop: true; dur: 5000; easing: linear">
-          </a-tetrahedron>
-
-        </a-entity>
-
+        <!-- Ефект 3D-рамки (Pop-out візуальне обрамлення) -->
+        <a-box position="0 0 0.02" width="0.81" height="1.39" depth="0.01" 
+               material="color: #ff416c; emissive: #ff4b2b; emissiveIntensity: 0.5; transparent: true; opacity: 0.8">
+        </a-box>
       </a-entity>
       
     </a-scene>
@@ -222,96 +185,13 @@
       const videoElement = document.querySelector("#my-video");
       const targetEntity = document.querySelector('[mindar-image-target]');
       const videoPlane = document.querySelector("#video-plane");
-      const mainCamera = document.querySelector("#main-camera");
       const scanInstruction = document.querySelector("#scan-instruction");
       const soundToggle = document.querySelector("#sound-toggle");
       const actionStatus = document.querySelector("#action-status");
 
-      const popoutContainer = document.querySelector("#popout-container");
-      const popoutChildren = popoutContainer.children;
-
-      let fadeOutTimeout = null;
       let isUnlocked = false;
       let isTargetFound = false;
       let statusTimeout = null;
-
-      // === 3D ЗВУК (Web Audio API HRTF Panner) ===
-      let audioCtx = null;
-      let pannerNode = null;
-      let mediaSource = null;
-      let isAudioConfigured = false;
-
-      const planePos = new THREE.Vector3();
-      const cameraPos = new THREE.Vector3();
-      const cameraQuaternion = new THREE.Quaternion();
-      const cameraForward = new THREE.Vector3();
-      const cameraUp = new THREE.Vector3();
-
-      function init3DAudio() {
-        if (isAudioConfigured) return;
-        
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        if (!AudioContext) return;
-
-        audioCtx = new AudioContext();
-        
-        pannerNode = audioCtx.createPanner();
-        pannerNode.panningModel = 'HRTF';
-        pannerNode.distanceModel = 'inverse';
-        pannerNode.refDistance = 0.8;
-        pannerNode.maxDistance = 10000;
-        pannerNode.rolloffFactor = 1.5;
-
-        mediaSource = audioCtx.createMediaElementSource(videoElement);
-        mediaSource.connect(pannerNode);
-        pannerNode.connect(audioCtx.destination);
-
-        isAudioConfigured = true;
-      }
-
-      function update3DAudio() {
-        if (!isAudioConfigured || !pannerNode || !isTargetFound || !audioCtx) return;
-
-        const planeObj = videoPlane.object3D;
-        const cameraObj = mainCamera.getObject3D('camera');
-
-        if (!planeObj || !cameraObj) return;
-
-        planeObj.getWorldPosition(planePos);
-        cameraObj.getWorldPosition(cameraPos);
-        cameraObj.getWorldQuaternion(cameraQuaternion);
-
-        cameraForward.set(0, 0, -1).applyQuaternion(cameraQuaternion);
-        cameraUp.set(0, 1, 0).applyQuaternion(cameraQuaternion);
-
-        const listener = audioCtx.listener;
-        if (listener.positionX) {
-          listener.positionX.setValueAtTime(cameraPos.x, audioCtx.currentTime);
-          listener.positionY.setValueAtTime(cameraPos.y, audioCtx.currentTime);
-          listener.positionZ.setValueAtTime(cameraPos.z, audioCtx.currentTime);
-          
-          listener.forwardX.setValueAtTime(cameraForward.x, audioCtx.currentTime);
-          listener.forwardY.setValueAtTime(cameraForward.y, audioCtx.currentTime);
-          listener.forwardZ.setValueAtTime(cameraForward.z, audioCtx.currentTime);
-          
-          listener.upX.setValueAtTime(cameraUp.x, audioCtx.currentTime);
-          listener.upY.setValueAtTime(cameraUp.y, audioCtx.currentTime);
-          listener.upZ.setValueAtTime(cameraUp.z, audioCtx.currentTime);
-        } else {
-          listener.setPosition(cameraPos.x, cameraPos.y, cameraPos.z);
-          listener.setOrientation(cameraForward.x, cameraForward.y, cameraForward.z, cameraUp.x, cameraUp.y, cameraUp.z);
-        }
-
-        if (pannerNode.positionX) {
-          pannerNode.positionX.setValueAtTime(planePos.x, audioCtx.currentTime);
-          pannerNode.positionY.setValueAtTime(planePos.y, audioCtx.currentTime);
-          pannerNode.positionZ.setValueAtTime(planePos.z, audioCtx.currentTime);
-        } else {
-          pannerNode.setPosition(planePos.x, planePos.y, planePos.z);
-        }
-
-        requestAnimationFrame(update3DAudio);
-      }
 
       function showStatus(text, duration = 1200) {
         actionStatus.textContent = text;
@@ -324,27 +204,9 @@
         }
       }
 
-      // Запуск 3D-анімацій вильоту
-      function triggerPopOut() {
-        for (let child of popoutChildren) {
-          child.emit("popIn");
-        }
-      }
-
-      function triggerPopOutReset() {
-        for (let child of popoutChildren) {
-          child.emit("popOut");
-        }
-      }
-
       overlay.addEventListener("click", () => {
         if (isUnlocked) return;
         isUnlocked = true;
-        
-        init3DAudio();
-        if (audioCtx && audioCtx.state === 'suspended') {
-          audioCtx.resume();
-        }
 
         videoElement.muted = false;
         overlay.style.opacity = "0";
@@ -367,38 +229,25 @@
         soundToggle.textContent = videoElement.muted ? "🔇" : "🔊";
       });
 
+      // Поведінка при знаходженні маркера
       targetEntity.addEventListener("targetFound", () => {
         if (!isUnlocked) return;
         isTargetFound = true;
-        if (fadeOutTimeout) clearTimeout(fadeOutTimeout);
         scanInstruction.classList.remove("visible");
         
-        videoElement.play().catch(e => console.log("Play failed:", e));
-        videoPlane.emit("showVideo");
-        
-        // Активуємо виліт 3D елементів
-        triggerPopOut();
-
-        if (audioCtx && audioCtx.state === 'suspended') {
-          audioCtx.resume();
+        // Якщо відео було на паузі через користувача - не чіпаємо, інакше граємо
+        if (videoElement.paused && videoElement.currentTime === 0) {
+          videoElement.play().catch(e => console.log("Play failed:", e));
         }
-        
-        requestAnimationFrame(update3DAudio);
       });
       
+      // Поведінка при втраті маркера: ВІДЕО НЕ ЗУПИНЯЄТЬСЯ, а залишається на місці
       targetEntity.addEventListener("targetLost", () => {
         if (!isUnlocked) return;
         isTargetFound = false;
         scanInstruction.classList.add("visible");
-        videoPlane.emit("hideVideo");
-        
-        // Ховаємо 3D елементи назад
-        triggerPopOutReset();
         actionStatus.classList.remove("show");
-
-        fadeOutTimeout = setTimeout(() => {
-          videoElement.pause();
-        }, 600);
+        // Відео навмисно НЕ ставиться на паузу, щоб зберігати простір
       });
 
       // === ЖЕСТИ (ЗУМ ТА ПАУЗА) ===
@@ -408,7 +257,7 @@
       let touchStartTime = 0;
 
       window.addEventListener('touchstart', (e) => {
-        if (!isTargetFound || e.target.closest('#sound-toggle')) return;
+        if (e.target.closest('#sound-toggle')) return;
 
         if (e.touches.length === 1) {
           touchStartTime = Date.now();
@@ -421,8 +270,6 @@
       }, { passive: false });
 
       window.addEventListener('touchmove', (e) => {
-        if (!isTargetFound) return;
-        
         if (e.touches.length === 2) {
           e.preventDefault(); 
           
@@ -440,7 +287,7 @@
       }, { passive: false });
 
       window.addEventListener('touchend', (e) => {
-        if (!isTargetFound || e.target.closest('#sound-toggle')) return;
+        if (e.target.closest('#sound-toggle')) return;
 
         if (e.touches.length === 0 && e.changedTouches.length === 1) {
           const touchDuration = Date.now() - touchStartTime;
