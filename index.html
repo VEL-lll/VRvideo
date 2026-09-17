@@ -1,0 +1,40 @@
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+  </head>
+  <body style="margin: 0; overflow: hidden;">
+    <a-scene mindar-image="imageTargetSrc: targets.mind;" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
+      <a-assets>
+        <!-- Звук увімкнено (muted прибрано) -->
+        <video id="my-video" src="https://files.catbox.moe/yhxzlz.mp4" preload="auto" response-type="arraybuffer" crossorigin="anonymous" webkit-playsinline playsinline></video>
+      </a-assets>
+
+      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+      <a-entity mindar-image-target="targetIndex: 0">
+        <a-video src="#my-video" position="0 0 0" height="1.33" width="0.75" rotation="0 0 0"></a-video>
+      </a-entity>
+    </a-scene>
+
+    <script>
+      const videoElement = document.querySelector("#my-video");
+      const targetEntity = document.querySelector('[mindar-image-target]');
+
+      targetEntity.addEventListener("targetFound", event => {
+        videoElement.muted = false; // Примусово вмикаємо звук
+        videoElement.play().catch(error => {
+          console.log("Autoplay blocked, trying muted:", error);
+          // Якщо браузер заблокує звук, спробуємо запустити хоча б без звуку, щоб відео не стояло
+          videoElement.muted = true;
+          videoElement.play();
+        });
+      });
+
+      targetEntity.addEventListener("targetLost", event => {
+        videoElement.pause();
+      });
+    </script>
+  </body>
+</html>
