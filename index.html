@@ -1,338 +1,1780 @@
+```html
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-    <title>Ultimate AR Video Experience</title>
-    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
-    
-    <style>
-      body {
-        margin: 0; 
-        overflow: hidden; 
-        touch-action: none;
-        -webkit-user-select: none; 
-        user-select: none;
-        -webkit-touch-callout: none;
-        -webkit-tap-highlight-color: transparent;
-        background: #000;
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+
+  <meta name="viewport"
+        content="width=device-width,
+                 initial-scale=1,
+                 maximum-scale=1,
+                 user-scalable=no,
+                 viewport-fit=cover">
+
+  <meta name="theme-color" content="#000000">
+
+  <title>Ultimate AR Video Experience</title>
+
+  <!-- =========================
+       A-FRAME
+  ========================== -->
+  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+
+  <!-- =========================
+       MIND-AR
+  ========================== -->
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+
+
+  <style>
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+
+      overflow: hidden;
+
+      background: #000;
+
+      touch-action: none;
+
+      user-select: none;
+      -webkit-user-select: none;
+
+      -webkit-touch-callout: none;
+    }
+
+
+    /* =========================================================
+       START SCREEN
+    ========================================================= */
+
+    #start-overlay {
+
+      position: fixed;
+
+      inset: 0;
+
+      z-index: 100000;
+
+      display: flex;
+
+      align-items: center;
+      justify-content: center;
+
+      flex-direction: column;
+
+      background:
+        radial-gradient(
+          circle at center,
+          rgba(30,35,55,0.96) 0%,
+          rgba(5,7,12,0.99) 70%
+        );
+
+      color: #fff;
+
+      font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Roboto,
+        sans-serif;
+
+      transition:
+        opacity .6s ease,
+        visibility .6s ease;
+    }
+
+
+    #start-overlay.hidden {
+
+      opacity: 0;
+
+      visibility: hidden;
+
+      pointer-events: none;
+    }
+
+
+    #start-logo {
+
+      font-size: 42px;
+
+      margin-bottom: 18px;
+
+      filter:
+        drop-shadow(0 0 20px rgba(0,180,255,.7));
+
+      animation:
+        logoPulse 2s ease-in-out infinite;
+    }
+
+
+    @keyframes logoPulse {
+
+      0%,100% {
+        transform: scale(1);
       }
 
-      #start-overlay {
-        position: fixed;
-        inset: 0;
-        background: radial-gradient(circle, rgba(20,20,30,0.95) 0%, rgba(5,5,10,0.98) 100%);
-        z-index: 10000;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-direction: column;
-        color: white;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        cursor: pointer;
-        transition: opacity 0.5s ease;
+      50% {
+        transform: scale(1.08);
       }
-      #start-btn {
-        background: linear-gradient(135deg, #00c6ff, #0072ff);
-        color: white;
-        border: none;
-        padding: 18px 36px;
-        font-size: 17px;
-        font-weight: 700;
-        border-radius: 35px;
-        box-shadow: 0 8px 25px rgba(0, 114, 255, 0.5);
-        cursor: pointer;
-        letter-spacing: 0.5px;
-        transition: transform 0.2s ease;
-      }
-      #start-btn:active {
-        transform: scale(0.96);
-      }
-      #start-hint {
-        margin-top: 14px;
-        font-size: 13px;
-        opacity: 0.6;
+    }
+
+
+    #start-title {
+
+      font-size: 23px;
+
+      font-weight: 800;
+
+      margin-bottom: 8px;
+
+      letter-spacing: .3px;
+    }
+
+
+    #start-subtitle {
+
+      font-size: 14px;
+
+      opacity: .65;
+
+      margin-bottom: 30px;
+
+      text-align: center;
+
+      max-width: 280px;
+
+      line-height: 1.5;
+    }
+
+
+    #start-btn {
+
+      border: 0;
+
+      outline: none;
+
+      padding:
+        17px
+        34px;
+
+      border-radius: 50px;
+
+      color: #fff;
+
+      font-size: 16px;
+
+      font-weight: 800;
+
+      letter-spacing: .3px;
+
+      background:
+        linear-gradient(
+          135deg,
+          #00c6ff,
+          #0072ff
+        );
+
+      box-shadow:
+        0 10px 35px rgba(0,114,255,.45),
+        inset 0 1px 1px rgba(255,255,255,.3);
+
+      transition:
+        transform .15s ease,
+        box-shadow .15s ease;
+    }
+
+
+    #start-btn:active {
+
+      transform: scale(.95);
+
+      box-shadow:
+        0 5px 20px rgba(0,114,255,.3);
+    }
+
+
+    #start-hint {
+
+      margin-top: 15px;
+
+      font-size: 12px;
+
+      opacity: .45;
+    }
+
+
+    /* =========================================================
+       SCAN UI
+    ========================================================= */
+
+    #scan-ui {
+
+      position: fixed;
+
+      top:
+        max(
+          25px,
+          env(safe-area-inset-top)
+        );
+
+      left: 50%;
+
+      transform:
+        translateX(-50%);
+
+      z-index: 9000;
+
+      pointer-events: none;
+
+      padding:
+        11px
+        19px;
+
+      border-radius: 30px;
+
+      background:
+        rgba(0,0,0,.62);
+
+      backdrop-filter:
+        blur(14px);
+
+      -webkit-backdrop-filter:
+        blur(14px);
+
+      border:
+        1px solid
+        rgba(255,255,255,.15);
+
+      color: #fff;
+
+      font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+
+      font-size: 14px;
+
+      font-weight: 600;
+
+      white-space: nowrap;
+
+      opacity: 0;
+
+      transition:
+        opacity .35s ease,
+        transform .35s ease;
+    }
+
+
+    #scan-ui.visible {
+
+      opacity: 1;
+
+      transform:
+        translateX(-50%)
+        translateY(0);
+    }
+
+
+    #scan-dot {
+
+      display: inline-block;
+
+      width: 8px;
+      height: 8px;
+
+      margin-right: 8px;
+
+      border-radius: 50%;
+
+      background: #00c6ff;
+
+      box-shadow:
+        0 0 12px #00c6ff;
+
+      animation:
+        scanPulse 1.2s infinite;
+    }
+
+
+    @keyframes scanPulse {
+
+      0%,100% {
+        opacity: .4;
+        transform: scale(.8);
       }
 
-      #scan-instruction {
-        position: fixed;
-        top: max(24px, env(safe-area-inset-top));
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: 9998;
-        background: rgba(0, 0, 0, 0.75);
-        color: white;
-        padding: 12px 24px;
-        border-radius: 25px;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        font-size: 14px;
-        font-weight: 500;
-        pointer-events: none;
-        opacity: 0;
-        transition: opacity 0.4s ease;
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-      }
-      #scan-instruction.visible {
+      50% {
         opacity: 1;
+        transform: scale(1.2);
       }
+    }
 
-      #action-status {
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%) scale(0.9);
-        z-index: 9999;
-        background: rgba(0, 0, 0, 0.85);
-        color: white;
-        padding: 14px 28px;
-        border-radius: 18px;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        font-size: 18px;
-        font-weight: bold;
-        pointer-events: none;
-        opacity: 0;
-        transition: opacity 0.2s ease, transform 0.2s ease;
-        backdrop-filter: blur(10px);
-      }
-      #action-status.show {
-        opacity: 1;
-        transform: translate(-50%, -50%) scale(1);
-      }
 
-      #sound-toggle {
-        position: fixed;
-        top: max(20px, env(safe-area-inset-top));
-        right: 20px;
-        z-index: 19999;
-        background: rgba(0, 0, 0, 0.65);
-        color: white;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        width: 48px;
-        height: 48px;
-        border-radius: 50%;
-        display: none;
-        align-items: center;
-        justify-content: center;
-        font-size: 22px;
-        cursor: pointer;
-        backdrop-filter: blur(8px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-      }
+    /* =========================================================
+       TARGET FOUND STATUS
+    ========================================================= */
 
-      #time-badge {
-        position: fixed;
-        bottom: max(16px, env(safe-area-inset-bottom));
-        right: 16px;
-        z-index: 20000;
-        color: #ffffff;
-        font-family: monospace;
-        font-size: 18px;
-        font-weight: 900;
-        pointer-events: none;
-        background: rgba(0, 0, 0, 0.5);
-        padding: 6px 12px;
-        border-radius: 8px;
-        backdrop-filter: blur(6px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        text-shadow: 0 2px 4px rgba(0,0,0,0.9);
-      }
-    </style>
-  </head>
-  
-  <body oncontextmenu="return false;">
-    
-    <div id="start-overlay">
-      <button id="start-btn">Запустити AR-досвід</button>
-      <div id="start-hint">(потрібен доступ до камери та звуку)</div>
+    #found-ui {
+
+      position: fixed;
+
+      top: 50%;
+
+      left: 50%;
+
+      z-index: 9100;
+
+      transform:
+        translate(-50%, -50%)
+        scale(.75);
+
+      opacity: 0;
+
+      pointer-events: none;
+
+      padding:
+        13px
+        22px;
+
+      border-radius: 18px;
+
+      color: #fff;
+
+      background:
+        rgba(0,0,0,.72);
+
+      border:
+        1px solid
+        rgba(0,220,255,.35);
+
+      backdrop-filter:
+        blur(15px);
+
+      -webkit-backdrop-filter:
+        blur(15px);
+
+      font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+
+      font-size: 16px;
+
+      font-weight: 800;
+
+      transition:
+        opacity .35s ease,
+        transform .35s ease;
+    }
+
+
+    #found-ui.show {
+
+      opacity: 1;
+
+      transform:
+        translate(-50%, -50%)
+        scale(1);
+    }
+
+
+    /* =========================================================
+       SOUND BUTTON
+    ========================================================= */
+
+    #sound-toggle {
+
+      position: fixed;
+
+      top:
+        max(
+          20px,
+          env(safe-area-inset-top)
+        );
+
+      right: 18px;
+
+      z-index: 15000;
+
+      width: 48px;
+      height: 48px;
+
+      display: none;
+
+      align-items: center;
+      justify-content: center;
+
+      border-radius: 50%;
+
+      background:
+        rgba(0,0,0,.62);
+
+      border:
+        1px solid
+        rgba(255,255,255,.18);
+
+      backdrop-filter:
+        blur(12px);
+
+      -webkit-backdrop-filter:
+        blur(12px);
+
+      color: #fff;
+
+      font-size: 21px;
+    }
+
+
+    #sound-toggle.active {
+
+      display: flex;
+    }
+
+
+    /* =========================================================
+       BOTTOM STATUS
+    ========================================================= */
+
+    #bottom-ui {
+
+      position: fixed;
+
+      left: 50%;
+
+      bottom:
+        max(
+          20px,
+          env(safe-area-inset-bottom)
+        );
+
+      transform:
+        translateX(-50%);
+
+      z-index: 9000;
+
+      color: #fff;
+
+      font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+
+      font-size: 12px;
+
+      opacity: .55;
+
+      text-align: center;
+
+      pointer-events: none;
+
+      white-space: nowrap;
+    }
+
+
+    /* =========================================================
+       VIDEO CONTROLS HINT
+    ========================================================= */
+
+    #gesture-hint {
+
+      position: fixed;
+
+      left: 50%;
+
+      bottom:
+        max(
+          55px,
+          calc(env(safe-area-inset-bottom) + 35px)
+        );
+
+      transform:
+        translateX(-50%);
+
+      z-index: 9000;
+
+      color: #fff;
+
+      background:
+        rgba(0,0,0,.55);
+
+      border-radius: 20px;
+
+      padding:
+        8px
+        14px;
+
+      font-size: 12px;
+
+      font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+
+      opacity: 0;
+
+      pointer-events: none;
+
+      transition:
+        opacity .4s ease;
+    }
+
+
+    #gesture-hint.show {
+
+      opacity: .7;
+    }
+
+
+    /* =========================================================
+       A-FRAME CANVAS
+    ========================================================= */
+
+    canvas.a-canvas {
+
+      position: fixed !important;
+
+      inset: 0 !important;
+
+      width: 100% !important;
+
+      height: 100% !important;
+    }
+
+  </style>
+</head>
+
+
+<body oncontextmenu="return false;">
+
+
+  <!-- =========================================================
+       START
+  ========================================================== -->
+
+  <div id="start-overlay">
+
+    <div id="start-logo">
+      ✦
     </div>
 
-    <div id="scan-instruction">📍 Наведіть камеру на фотографію</div>
-    <div id="action-status"></div>
-    <div id="sound-toggle">🔇</div>
-    <div id="time-badge">17.09.2026, 09:07:15</div>
+    <div id="start-title">
+      Ultimate AR
+    </div>
 
-    <a-scene mindar-image="imageTargetSrc: targets.mind; filterMinCF: 0.0001; filterBeta: 0.001; warmupTolerance: 3; missTolerance: 8;" color-space="sRGB" renderer="colorManagement: true; antialias: true; precision: highp;" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
-      
-      <a-assets>
-        <video id="my-video" src="https://files.catbox.moe/y5fotd.mp4" preload="auto" crossorigin="anonymous" webkit-playsinline playsinline loop></video>
-      </a-assets>
+    <div id="start-subtitle">
+      Наведіть камеру на фотографію
+      та оживіть її за допомогою AR
+    </div>
 
-      <a-camera id="main-camera" position="0 0 0" look-controls="enabled: false"></a-camera>
+    <button id="start-btn">
+      Запустити AR
+    </button>
 
-      <a-entity id="target-entity" mindar-image-target="targetIndex: 0">
-        <a-plane id="video-plane" src="#my-video" position="0 0 0" height="1.33" width="0.75" 
-                 rotation="0 0 0" scale="1 1 1"
-                 material="shader: flat; transparent: true; opacity: 0;"
-                 visible="false">
-        </a-plane>
-      </a-entity>
-      
-    </a-scene>
+    <div id="start-hint">
+      Потрібен доступ до камери
+    </div>
 
-    <script>
-      const overlay = document.querySelector("#start-overlay");
-      const videoElement = document.querySelector("#my-video");
-      const targetEntity = document.querySelector('#target-entity');
-      const videoPlane = document.querySelector("#video-plane");
-      const scanInstruction = document.querySelector("#scan-instruction");
-      const soundToggle = document.querySelector("#sound-toggle");
-      const actionStatus = document.querySelector("#action-status");
+  </div>
 
-      let isUnlocked = false;
-      let userMuted = false;
-      let statusTimeout = null;
-      let fadeAnimationId = null;
 
-      function showStatus(text, duration = 1000) {
-        actionStatus.textContent = text;
-        actionStatus.classList.add("show");
-        if (statusTimeout) clearTimeout(statusTimeout);
-        if (duration > 0) {
-          statusTimeout = setTimeout(() => {
-            actionStatus.classList.remove("show");
-          }, duration);
+  <!-- =========================================================
+       SCAN
+  ========================================================== -->
+
+  <div id="scan-ui">
+
+    <span id="scan-dot"></span>
+
+    Наведіть камеру на фотографію
+
+  </div>
+
+
+  <!-- =========================================================
+       FOUND
+  ========================================================== -->
+
+  <div id="found-ui">
+    ✦ Фото знайдено
+  </div>
+
+
+  <!-- =========================================================
+       SOUND
+  ========================================================== -->
+
+  <button id="sound-toggle">
+    🔇
+  </button>
+
+
+  <!-- =========================================================
+       BOTTOM
+  ========================================================== -->
+
+  <div id="gesture-hint">
+    👆 Тап — пауза • Два пальці — масштаб
+  </div>
+
+
+  <div id="bottom-ui">
+    AR Image Tracking
+  </div>
+
+
+  <!-- =========================================================
+       AR SCENE
+  ========================================================== -->
+
+  <a-scene
+
+    id="ar-scene"
+
+    mindar-image="
+      imageTargetSrc: targets.mind;
+
+      filterMinCF: 0.0001;
+      filterBeta: 0.001;
+
+      warmupTolerance: 4;
+      missTolerance: 10;
+    "
+
+    color-space="sRGB"
+
+    renderer="
+      colorManagement: true;
+      physicallyCorrectLights: false;
+      antialias: true;
+      precision: highp;
+      logarithmicDepthBuffer: true;
+    "
+
+    vr-mode-ui="enabled: false"
+
+    device-orientation-permission-ui="enabled: false"
+
+    embedded
+
+  >
+
+
+    <!-- =======================================================
+         ASSETS
+    ======================================================== -->
+
+    <a-assets timeout="15000">
+
+      <video
+
+        id="my-video"
+
+        src="https://files.catbox.moe/y5fotd.mp4"
+
+        preload="auto"
+
+        crossorigin="anonymous"
+
+        playsinline
+
+        webkit-playsinline
+
+        loop
+
+        muted
+
+      ></video>
+
+    </a-assets>
+
+
+    <!-- =======================================================
+         CAMERA
+    ======================================================== -->
+
+    <a-camera
+
+      id="main-camera"
+
+      position="0 0 0"
+
+      look-controls="enabled: false"
+
+      wasd-controls="enabled: false"
+
+    ></a-camera>
+
+
+    <!-- =======================================================
+         IMAGE TARGET
+    ======================================================== -->
+
+    <a-entity
+
+      id="target-entity"
+
+      mindar-image-target="targetIndex: 0"
+
+    >
+
+
+      <!-- =====================================================
+           GLOW BACKGROUND
+      ====================================================== -->
+
+      <a-plane
+
+        id="glow-plane"
+
+        position="0 0 -0.012"
+
+        width=".79"
+
+        height="1.37"
+
+        material="
+          shader: flat;
+          color: #00c6ff;
+          transparent: true;
+          opacity: 0;
+        "
+
+        animation__scale="
+          property: scale;
+          from: 0.94 0.94 0.94;
+          to: 1.06 1.06 1.06;
+          dur: 1400;
+          dir: alternate;
+          loop: true;
+          easing: easeInOutSine;
+        "
+
+      ></a-plane>
+
+
+      <!-- =====================================================
+           VIDEO PLANE
+      ====================================================== -->
+
+      <a-plane
+
+        id="video-plane"
+
+        src="#my-video"
+
+        position="0 0 0"
+
+        width="0.75"
+
+        height="1.33"
+
+        rotation="0 0 0"
+
+        scale="1 1 1"
+
+        material="
+          shader: flat;
+          transparent: true;
+          opacity: 0;
+          side: double;
+        "
+
+        visible="false"
+
+      ></a-plane>
+
+
+      <!-- =====================================================
+           BORDER
+      ====================================================== -->
+
+      <a-plane
+
+        id="border-plane"
+
+        position="0 0 0.008"
+
+        width="0.765"
+
+        height="1.345"
+
+        material="
+          shader: flat;
+          color: #00c6ff;
+          transparent: true;
+          opacity: 0;
+          wireframe: true;
+        "
+
+      ></a-plane>
+
+
+      <!-- =====================================================
+           CENTER LIGHT
+      ====================================================== -->
+
+      <a-ring
+
+        id="center-ring"
+
+        position="0 0 0.012"
+
+        radius-inner="0.02"
+
+        radius-outer="0.035"
+
+        rotation="0 0 0"
+
+        material="
+          shader: flat;
+          color: #ffffff;
+          transparent: true;
+          opacity: 0;
+        "
+
+        animation="
+          property: scale;
+          from: .8 .8 .8;
+          to: 1.8 1.8 1.8;
+          dur: 1100;
+          loop: true;
+          easing: easeOutQuad;
+        "
+
+      ></a-ring>
+
+
+    </a-entity>
+
+  </a-scene>
+
+
+  <!-- =========================================================
+       JAVASCRIPT
+  ========================================================== -->
+
+  <script>
+
+    /* =========================================================
+       ELEMENTS
+    ========================================================= */
+
+    const scene =
+      document.querySelector("#ar-scene");
+
+    const overlay =
+      document.querySelector("#start-overlay");
+
+    const startButton =
+      document.querySelector("#start-btn");
+
+    const target =
+      document.querySelector("#target-entity");
+
+    const video =
+      document.querySelector("#my-video");
+
+    const videoPlane =
+      document.querySelector("#video-plane");
+
+    const glowPlane =
+      document.querySelector("#glow-plane");
+
+    const borderPlane =
+      document.querySelector("#border-plane");
+
+    const centerRing =
+      document.querySelector("#center-ring");
+
+    const scanUI =
+      document.querySelector("#scan-ui");
+
+    const foundUI =
+      document.querySelector("#found-ui");
+
+    const soundButton =
+      document.querySelector("#sound-toggle");
+
+    const gestureHint =
+      document.querySelector("#gesture-hint");
+
+
+    /* =========================================================
+       STATE
+    ========================================================= */
+
+    let started = false;
+
+    let targetVisible = false;
+
+    let userMuted = true;
+
+    let fadeAnimation = null;
+
+    let scaleValue = 1;
+
+    let initialDistance = 0;
+
+    let initialScale = 1;
+
+    let touchStartTime = 0;
+
+
+    /* =========================================================
+       UTILITY
+    ========================================================= */
+
+    function clamp(
+      value,
+      min,
+      max
+    ) {
+
+      return Math.max(
+        min,
+        Math.min(max, value)
+      );
+    }
+
+
+    /* =========================================================
+       MATERIAL OPACITY
+    ========================================================= */
+
+    function setOpacity(
+      entity,
+      opacity
+    ) {
+
+      if (!entity)
+        return;
+
+      entity.setAttribute(
+        "material",
+        "opacity",
+        opacity
+      );
+    }
+
+
+    /* =========================================================
+       SMOOTH FADE
+    ========================================================= */
+
+    function fadePlane(
+      entity,
+      targetOpacity,
+      duration = 600,
+      callback
+    ) {
+
+      if (!entity)
+        return;
+
+      if (fadeAnimation)
+        cancelAnimationFrame(
+          fadeAnimation
+        );
+
+
+      const material =
+        entity.components.material &&
+        entity.components.material.material;
+
+
+      if (!material)
+        return;
+
+
+      const startOpacity =
+        material.opacity;
+
+
+      const startTime =
+        performance.now();
+
+
+      function animate(
+        currentTime
+      ) {
+
+        const elapsed =
+          currentTime - startTime;
+
+
+        const progress =
+          clamp(
+            elapsed / duration,
+            0,
+            1
+          );
+
+
+        const eased =
+          progress < 0.5
+
+            ? 2 * progress * progress
+
+            : 1 -
+              Math.pow(
+                -2 * progress + 2,
+                2
+              ) / 2;
+
+
+        const opacity =
+          startOpacity +
+          (
+            targetOpacity -
+            startOpacity
+          ) *
+          eased;
+
+
+        material.opacity =
+          opacity;
+
+
+        if (progress < 1) {
+
+          fadeAnimation =
+            requestAnimationFrame(
+              animate
+            );
+
+        } else {
+
+          fadeAnimation = null;
+
+          if (callback)
+            callback();
+
         }
+
       }
 
-      // Еталонна плавна анімація прозорості (Fade-in / Fade-out)
-      function animateOpacity(targetOpacity, duration = 700, onComplete) {
-        if (fadeAnimationId) cancelAnimationFrame(fadeAnimationId);
-        
-        const materialComponent = videoPlane.components.material;
-        if (!materialComponent || !materialComponent.material) return;
-        
-        const startOpacity = materialComponent.material.opacity;
-        const startTime = performance.now();
 
-        function step(currentTime) {
-          const elapsed = currentTime - startTime;
-          const progress = Math.min(elapsed / duration, 1);
-          
-          // Плавна математична крива (ease in-out)
-          const eased = progress < 0.5 ? 2 * progress * progress : -1 + (4 - 2 * progress) * progress;
-          const currentOpacity = startOpacity + (targetOpacity - startOpacity) * eased;
-          
-          materialComponent.material.opacity = currentOpacity;
-          videoPlane.setAttribute('material', 'opacity', currentOpacity);
+      fadeAnimation =
+        requestAnimationFrame(
+          animate
+        );
 
-          if (progress < 1) {
-            fadeAnimationId = requestAnimationFrame(step);
-          } else {
-            if (onComplete) onComplete();
-          }
+    }
+
+
+    /* =========================================================
+       SHOW SCAN
+    ========================================================= */
+
+    function showScanner() {
+
+      scanUI.classList.add(
+        "visible"
+      );
+
+    }
+
+
+    function hideScanner() {
+
+      scanUI.classList.remove(
+        "visible"
+      );
+
+    }
+
+
+    /* =========================================================
+       FOUND MESSAGE
+    ========================================================= */
+
+    function showFoundMessage() {
+
+      foundUI.classList.add(
+        "show"
+      );
+
+
+      setTimeout(() => {
+
+        foundUI.classList.remove(
+          "show"
+        );
+
+      }, 900);
+
+    }
+
+
+    /* =========================================================
+       START AR
+    ========================================================= */
+
+    startButton.addEventListener(
+      "click",
+      async () => {
+
+        if (started)
+          return;
+
+
+        started = true;
+
+
+        overlay.classList.add(
+          "hidden"
+        );
+
+
+        soundButton.classList.add(
+          "active"
+        );
+
+
+        showScanner();
+
+
+        /*
+          Розблоковуємо відео для Safari/iOS.
+        */
+
+        video.muted = true;
+
+        video.playsInline = true;
+
+
+        try {
+
+          await video.play();
+
+          video.pause();
+
+          video.currentTime = 0;
+
+        } catch (error) {
+
+          console.log(
+            "Video unlock:",
+            error
+          );
+
         }
-        fadeAnimationId = requestAnimationFrame(step);
+
+
+        /*
+          Показуємо підказку.
+        */
+
+        setTimeout(() => {
+
+          gestureHint.classList.add(
+            "show"
+          );
+
+        }, 2500);
+
+
+        setTimeout(() => {
+
+          gestureHint.classList.remove(
+            "show"
+          );
+
+        }, 6500);
+
       }
+    );
 
-      // Запуск по кліку користувача
-      overlay.addEventListener("click", () => {
-        if (isUnlocked) return;
-        isUnlocked = true;
 
-        overlay.style.opacity = "0";
-        setTimeout(() => overlay.style.display = "none", 500);
+    /* =========================================================
+       SOUND
+    ========================================================= */
 
-        scanInstruction.classList.add("visible");
-        soundToggle.style.display = "flex";
+    soundButton.addEventListener(
+      "click",
+      async (event) => {
 
-        videoElement.muted = true;
-        videoElement.play().then(() => {
-          videoElement.pause();
-          videoElement.currentTime = 0;
-        }).catch(err => console.log("Init video error:", err));
-      });
+        event.preventDefault();
 
-      soundToggle.addEventListener("click", (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        userMuted = !userMuted;
-        videoElement.muted = userMuted;
-        soundToggle.textContent = userMuted ? "🔇" : "🔊";
-      });
+        event.stopPropagation();
 
-      // Коли маркер знайдено у просторі
-      targetEntity.addEventListener("targetFound", () => {
-        if (!isUnlocked) return;
-        scanInstruction.classList.remove("visible");
-        
-        videoPlane.setAttribute("visible", "true");
-        
-        videoElement.muted = userMuted;
-        videoElement.play().catch(e => console.log("Play error:", e));
-        
-        // Красива плавна поява
-        animateOpacity(1.0, 800);
-      });
-      
-      // Коли маркер втрачено
-      targetEntity.addEventListener("targetLost", () => {
-        if (!isUnlocked) return;
-        scanInstruction.classList.add("visible");
-        actionStatus.classList.remove("show");
-        
-        // Плавне згасання перед вимкненням
-        animateOpacity(0, 600, () => {
-          videoPlane.setAttribute("visible", "false");
-          videoElement.pause();
-          videoElement.muted = true;
-        });
-      });
 
-      // === МУЛЬТИТАСКИНГ ТА ЖЕСТИ (Зум двома пальцями та пауза тапом) ===
-      let initialDistance = 0;
-      let baseScale = 1;
-      let currentScale = 1;
-      let touchStartTime = 0;
+        userMuted =
+          !userMuted;
 
-      window.addEventListener('touchstart', (e) => {
-        if (e.target.closest('#sound-toggle')) return;
 
-        if (e.touches.length === 1) {
-          touchStartTime = Date.now();
-        } else if (e.touches.length === 2) {
-          const dx = e.touches[0].clientX - e.touches[1].clientX;
-          const dy = e.touches[0].clientY - e.touches[1].clientY;
-          initialDistance = Math.hypot(dx, dy);
-          baseScale = currentScale;
-        }
-      }, { passive: false });
+        video.muted =
+          userMuted;
 
-      window.addEventListener('touchmove', (e) => {
-        if (e.touches.length === 2) {
-          e.preventDefault(); 
-          
-          const dx = e.touches[0].clientX - e.touches[1].clientX;
-          const dy = e.touches[0].clientY - e.touches[1].clientY;
-          const dist = Math.hypot(dx, dy);
-          
-          let factor = dist / initialDistance;
-          currentScale = Math.max(0.4, Math.min(3.5, baseScale * factor));
-          
-          if (videoPlane.object3D) {
-            videoPlane.object3D.scale.set(currentScale, currentScale, currentScale);
+
+        soundButton.textContent =
+          userMuted
+            ? "🔇"
+            : "🔊";
+
+
+        if (
+          targetVisible &&
+          video.paused
+        ) {
+
+          try {
+
+            await video.play();
+
+          } catch (error) {
+
+            console.log(
+              "Audio play error:",
+              error
+            );
+
           }
+
         }
-      }, { passive: false });
 
-      window.addEventListener('touchend', (e) => {
-        if (e.target.closest('#sound-toggle')) return;
+      }
+    );
 
-        if (e.touches.length === 0 && e.changedTouches.length === 1) {
-          const touchDuration = Date.now() - touchStartTime;
-          if (touchDuration < 300 && videoPlane.getAttribute('visible') === true) {
-            if (videoElement.paused) {
-              videoElement.play();
-              showStatus("▶️ Відтворення");
-            } else {
-              videoElement.pause();
-              showStatus("⏸ Пауза", 0);
+
+    /* =========================================================
+       TARGET FOUND
+    ========================================================= */
+
+    target.addEventListener(
+      "targetFound",
+      async () => {
+
+        if (!started)
+          return;
+
+
+        targetVisible = true;
+
+
+        hideScanner();
+
+
+        showFoundMessage();
+
+
+        /*
+          Вмикаємо відео.
+        */
+
+        video.muted =
+          userMuted;
+
+
+        try {
+
+          await video.play();
+
+        } catch (error) {
+
+          console.log(
+            "Play error:",
+            error
+          );
+
+        }
+
+
+        /*
+          Робимо площину видимою.
+        */
+
+        videoPlane.setAttribute(
+          "visible",
+          "true"
+        );
+
+
+        /*
+          Відео.
+        */
+
+        fadePlane(
+          videoPlane,
+          1,
+          750
+        );
+
+
+        /*
+          Glow.
+        */
+
+        setOpacity(
+          glowPlane,
+          0
+        );
+
+
+        glowPlane.setAttribute(
+          "visible",
+          "true"
+        );
+
+
+        fadePlane(
+          glowPlane,
+          .12,
+          900
+        );
+
+
+        /*
+          Border.
+        */
+
+        borderPlane.setAttribute(
+          "visible",
+          "true"
+        );
+
+
+        fadePlane(
+          borderPlane,
+          .55,
+          650
+        );
+
+
+        /*
+          Center ring.
+        */
+
+        centerRing.setAttribute(
+          "visible",
+          "true"
+        );
+
+
+        fadePlane(
+          centerRing,
+          .9,
+          450
+        );
+
+      }
+    );
+
+
+    /* =========================================================
+       TARGET LOST
+    ========================================================= */
+
+    target.addEventListener(
+      "targetLost",
+      () => {
+
+        if (!started)
+          return;
+
+
+        targetVisible = false;
+
+
+        showScanner();
+
+
+        /*
+          Плавно прибираємо
+          відео та ефекти.
+        */
+
+        fadePlane(
+          videoPlane,
+          0,
+          450,
+          () => {
+
+            if (!targetVisible) {
+
+              videoPlane.setAttribute(
+                "visible",
+                "false"
+              );
+
             }
+
           }
+        );
+
+
+        fadePlane(
+          glowPlane,
+          0,
+          400
+        );
+
+
+        fadePlane(
+          borderPlane,
+          0,
+          300
+        );
+
+
+        fadePlane(
+          centerRing,
+          0,
+          250
+        );
+
+
+        /*
+          Не перемотуємо відео.
+          Воно продовжить з того місця,
+          де було втрачено.
+        */
+
+        video.pause();
+
+      }
+    );
+
+
+    /* =========================================================
+       TOUCH — TAP = PLAY / PAUSE
+    ========================================================= */
+
+    window.addEventListener(
+      "touchstart",
+      event => {
+
+        if (
+          event.target.closest(
+            "#sound-toggle"
+          )
+        )
+          return;
+
+
+        if (
+          event.touches.length === 1
+        ) {
+
+          touchStartTime =
+            Date.now();
+
         }
-      });
-    </script>
-  </body>
+
+
+        if (
+          event.touches.length === 2
+        ) {
+
+          const dx =
+            event.touches[0].clientX -
+            event.touches[1].clientX;
+
+
+          const dy =
+            event.touches[0].clientY -
+            event.touches[1].clientY;
+
+
+          initialDistance =
+            Math.hypot(
+              dx,
+              dy
+            );
+
+
+          initialScale =
+            scaleValue;
+
+        }
+
+      },
+      {
+        passive: false
+      }
+    );
+
+
+    /* =========================================================
+       TOUCH — PINCH ZOOM
+    ========================================================= */
+
+    window.addEventListener(
+      "touchmove",
+      event => {
+
+        if (
+          event.touches.length !== 2
+        )
+          return;
+
+
+        event.preventDefault();
+
+
+        const dx =
+          event.touches[0].clientX -
+          event.touches[1].clientX;
+
+
+        const dy =
+          event.touches[0].clientY -
+          event.touches[1].clientY;
+
+
+        const distance =
+          Math.hypot(
+            dx,
+            dy
+          );
+
+
+        if (
+          initialDistance <= 0
+        )
+          return;
+
+
+        const factor =
+          distance /
+          initialDistance;
+
+
+        scaleValue =
+          clamp(
+            initialScale *
+            factor,
+            .6,
+            2.5
+          );
+
+
+        /*
+          Масштабування
+          самої AR-площини.
+
+          Важливо:
+          вона все одно залишається
+          дочірнім об'єктом target,
+          тому нахил/поворот телефона
+          продовжує коректно працювати.
+        */
+
+        videoPlane.object3D.scale.set(
+          scaleValue,
+          scaleValue,
+          scaleValue
+        );
+
+      },
+      {
+        passive: false
+      }
+    );
+
+
+    /* =========================================================
+       TOUCH END
+    ========================================================= */
+
+    window.addEventListener(
+      "touchend",
+      event => {
+
+        if (
+          event.target.closest(
+            "#sound-toggle"
+          )
+        )
+          return;
+
+
+        /*
+          Якщо це був одиночний
+          короткий тап.
+        */
+
+        if (
+          event.touches.length === 0 &&
+          event.changedTouches.length === 1
+        ) {
+
+          const duration =
+            Date.now() -
+            touchStartTime;
+
+
+          if (
+            duration < 280 &&
+            targetVisible
+          ) {
+
+            if (
+              video.paused
+            ) {
+
+              video.muted =
+                userMuted;
+
+
+              video.play()
+                .catch(
+                  console.log
+                );
+
+            } else {
+
+              video.pause();
+
+            }
+
+          }
+
+        }
+
+      }
+    );
+
+
+    /* =========================================================
+       PREVENT DOUBLE TAP ZOOM
+    ========================================================= */
+
+    let lastTap = 0;
+
+
+    document.addEventListener(
+      "touchend",
+      event => {
+
+        const now =
+          Date.now();
+
+
+        if (
+          now - lastTap < 300
+        ) {
+
+          event.preventDefault();
+
+        }
+
+
+        lastTap = now;
+
+      },
+      {
+        passive: false
+      }
+    );
+
+
+    /* =========================================================
+       VISIBILITY CHANGE
+    ========================================================= */
+
+    document.addEventListener(
+      "visibilitychange",
+      () => {
+
+        if (
+          document.hidden
+        ) {
+
+          if (
+            !video.paused
+          ) {
+
+            video.pause();
+
+          }
+
+        }
+
+      }
+    );
+
+
+    /* =========================================================
+       PAGE SHOW
+    ========================================================= */
+
+    window.addEventListener(
+      "pageshow",
+      () => {
+
+        if (
+          targetVisible
+        ) {
+
+          video.muted =
+            userMuted;
+
+        }
+
+      }
+    );
+
+
+    /* =========================================================
+       VIDEO ERROR
+    ========================================================= */
+
+    video.addEventListener(
+      "error",
+      () => {
+
+        console.error(
+          "Не вдалося завантажити відео."
+        );
+
+      }
+    );
+
+
+    /* =========================================================
+       VIDEO LOADED
+    ========================================================= */
+
+    video.addEventListener(
+      "loadeddata",
+      () => {
+
+        console.log(
+          "AR Video loaded."
+        );
+
+      }
+    );
+
+
+    /* =========================================================
+       DEBUG
+    ========================================================= */
+
+    console.log(
+      "%cUltimate AR initialized",
+      "font-size:18px;font-weight:bold;"
+    );
+
+  </script>
+
+</body>
 </html>
+```
