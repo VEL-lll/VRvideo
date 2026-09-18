@@ -60,7 +60,7 @@
   <p>Наведіть камеру на фотографію<br>Масштаб — двома пальцями</p>
   <button id="start-btn" disabled>▶ Почати</button>
   <div class="status" id="status">Завантаження відео…</div>
-  <div class="ver" id="ver">v6.0</div>
+  <div class="ver" id="ver">v7.0</div>
 </div>
 
 <div id="scan">
@@ -73,7 +73,7 @@
 
 <div id="hint" class="hide">Наведіть камеру на фотографію</div>
 <div id="zoom">1.00×</div>
-<div id="build">v6.0</div>
+<div id="build">v7.0</div>
 
 <div id="hud">
   <button class="btn" id="btn-play">
@@ -85,44 +85,39 @@
 </div>
 
 <a-scene
-  mindar-image="imageTargetSrc: ./targets.mind; uiLoading: no; uiScanning: no; uiError: no; maxTrack: 1; filterMinCF: 0.0001; filterBeta: 0.001; warmupTolerance: 5; missTolerance: 5;"
+  mindar-image="imageTargetSrc: ./targets.mind; uiLoading: no; uiScanning: no; uiError: no; maxTrack: 1; filterMinCF: 0.001; filterBeta: 0.01; warmupTolerance: 10; missTolerance: 10;"
   vr-mode-ui="enabled: false"
   device-orientation-permission-ui="enabled: false"
+  color-space="sRGB"
   renderer="alpha: true; colorManagement: true; antialias: false; sortObjects: false;"
   embedded>
   <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
   <a-entity mindar-image-target="targetIndex: 0">
-    <a-plane id="ar-video-plane"
+    <a-plane id="ar-plane"
              width="1" height="1"
              position="0 0 0.001"
              rotation="0 0 0"
-             material="shader: flat; side: double; transparent: true; opacity: 1;"
+             material="shader: flat; side: double; transparent: true;"
              visible="false"
              scale="0.01 0.01 0.01"></a-plane>
   </a-entity>
 </a-scene>
 
-<!-- ⚠️ ВАЖЛИВО: НЕ display:none! Інакше iOS Safari не створює текстуру -->
 <video id="vid"
   src="https://files.catbox.moe/y5fotd.mp4"
-  playsinline webkit-playsinline muted
-  crossorigin="anonymous"
-  preload="auto"
+  playsinline webkit-playsinline muted crossorigin="anonymous" preload="auto"
   style="position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0;pointer-events:none"></video>
 
 <script>
 // ============================================================
 // КОНФІГ
 // ============================================================
-const VERSION = 'v6.0';
-const ZOOM_MIN = 0.3;
-const ZOOM_MAX = 3.0;
-const FADE_IN_MS = 700;
-const FADE_OUT_MS = 500;
+const VERSION = 'v7.0';
+const ZOOM_MIN = 0.3, ZOOM_MAX = 3.0;
+const FADE_IN_MS = 700, FADE_OUT_MS = 500;
 
 (function(){
-  const d = new Date();
-  const p = n => String(n).padStart(2,'0');
+  const d = new Date(); const p = n => String(n).padStart(2,'0');
   const s = `${VERSION} · ${p(d.getDate())}.${p(d.getMonth()+1)}.${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`;
   document.getElementById('build').textContent = s;
   document.getElementById('ver').textContent = s;
@@ -132,7 +127,7 @@ const FADE_OUT_MS = 500;
 // ЕЛЕМЕНТИ
 // ============================================================
 const video = document.getElementById('vid');
-const arPlane = document.getElementById('ar-video-plane');
+const plane = document.getElementById('ar-plane');
 const sceneEl = document.querySelector('a-scene');
 const startScreen = document.getElementById('start');
 const startBtn = document.getElementById('start-btn');
@@ -144,7 +139,6 @@ const zoomInd = document.getElementById('zoom');
 const btnPlay = document.getElementById('btn-play');
 const btnReset = document.getElementById('btn-reset');
 const iconPlay = document.getElementById('icon-play');
-
 const ICON_PLAY = '<path d="M8 5v14l11-7z"/>';
 const ICON_PAUSE = '<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>';
 
@@ -153,28 +147,20 @@ const ICON_PAUSE = '<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>';
 // ============================================================
 let targetVisible = false;
 let videoReady = false;
-let firstFrameShown = false;
 let zoomFactor = 1.0;
-let initialPinch = 0;
-let initialZoom = 1.0;
-let animScale = null;
+let initialPinch = 0, initialZoom = 1.0;
+let anim = null;
 let texture = null;
-let material = null;
 
-video.muted = true;
-video.volume = 0;
+video.muted = true; video.volume = 0;
 
 // ============================================================
-// 1. ЗАВАНТАЖЕННЯ ВІДЕО — без fetch, тільки src
+// 1. ЗАВАНТАЖЕННЯ ВІДЕО
 // ============================================================
 video.addEventListener('loadedmetadata', () => {
   const aspect = video.videoWidth / video.videoHeight;
-  let w, h;
-  if (aspect >= 1) { w = 1; h = 1 / aspect; }
-  else { w = aspect; h = 1; }
-  arPlane.setAttribute('width', w);
-  arPlane.setAttribute('height', h);
-  console.log(`✅ Aspect ${aspect.toFixed(3)} → ${w.toFixed(3)}×${h.toFixed(3)}`);
+  console.log(`✅ Відео: ${video.videoWidth}×${video.videoHeight}`);
+  applyCover(aspect);
 });
 
 video.addEventListener('canplaythrough', () => {
@@ -182,12 +168,10 @@ video.addEventListener('canplaythrough', () => {
   videoReady = true;
   startBtn.disabled = false;
   statusEl.textContent = '✅ Готово до старту';
-  console.log('✅ Video canplaythrough');
 }, { once: true });
 
-// Прогрес завантаження
 video.addEventListener('progress', () => {
-  if (!videoReady && video.buffered.length > 0) {
+  if (!videoReady && video.buffered.length > 0 && video.duration) {
     const pct = Math.round((video.buffered.end(0) / video.duration) * 100);
     statusEl.textContent = `Завантаження… ${pct}%`;
   }
@@ -196,14 +180,29 @@ video.addEventListener('progress', () => {
 video.load();
 
 // ============================================================
-// 2. СТВОРЕННЯ VIDEO TEXTURE на a-plane
+// 2. COVER
+// ============================================================
+function applyCover(aspect) {
+  if (!texture) { setTimeout(() => applyCover(aspect), 100); return; }
+  if (aspect > 1) {
+    const w = 1 / aspect;
+    texture.repeat.set(w, 1);
+    texture.offset.set((1 - w) / 2, 0);
+  } else {
+    const h = aspect;
+    texture.repeat.set(1, h);
+    texture.offset.set(0, (1 - h) / 2);
+  }
+  texture.needsUpdate = true;
+}
+
+// ============================================================
+// 3. VideoTexture
 // ============================================================
 function setupTexture() {
-  const mesh = arPlane.getObject3D('mesh');
-  if (!mesh) {
-    requestAnimationFrame(setupTexture);
-    return;
-  }
+  const mesh = plane.getObject3D('mesh');
+  if (!mesh) { requestAnimationFrame(setupTexture); return; }
+  if (texture) return;
 
   texture = new THREE.VideoTexture(video);
   texture.minFilter = THREE.LinearFilter;
@@ -212,73 +211,63 @@ function setupTexture() {
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.generateMipmaps = false;
 
-  material = new THREE.MeshBasicMaterial({
-    map: texture,
-    side: THREE.DoubleSide,
-    toneMapped: false,
-    transparent: true,
-    opacity: 1
+  const material = new THREE.MeshBasicMaterial({
+    map: texture, side: THREE.DoubleSide,
+    toneMapped: false, transparent: true
   });
-
   mesh.material = material;
-  console.log('✅ VideoTexture прив\'язана до a-plane');
 
-  // Tick для оновлення текстури
-  function tick() {
-    requestAnimationFrame(tick);
-    if (texture && video.readyState >= 2 && !video.paused && !video.ended) {
-      texture.needsUpdate = true;
-    }
+  console.log('✅ VideoTexture прив\'язана');
+
+  if (video.videoWidth && video.videoHeight) {
+    applyCover(video.videoWidth / video.videoHeight);
   }
-  tick();
+
+  (function tick(){
+    requestAnimationFrame(tick);
+    if (texture && video.readyState >= 2 && !video.ended) texture.needsUpdate = true;
+  })();
 }
 
 // ============================================================
-// 3. АНІМАЦІЯ SCALE
+// 4. АНІМАЦІЯ SCALE
 // ============================================================
 function animateScale(from, to, dur, cb) {
-  animScale = { from, to, start: performance.now(), dur, cb: cb || null };
+  anim = { from, to, start: performance.now(), dur, cb: cb || null };
 }
 
-function tickScale(now) {
-  if (animScale) {
-    const t = Math.min((now - animScale.start) / animScale.dur, 1);
-    let eased;
-    if (animScale.to > animScale.from) {
-      const c1 = 1.70158, c3 = c1 + 1;
-      eased = 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
-    } else {
-      eased = t * t;
-    }
-    const s = animScale.from + (animScale.to - animScale.from) * eased;
-    arPlane.setAttribute('scale', `${s} ${s} ${s}`);
-
-    if (t >= 1) {
-      const cb = animScale.cb;
-      animScale = null;
-      if (cb) cb();
-    }
-  }
+(function tickScale(now){
   requestAnimationFrame(tickScale);
-}
-requestAnimationFrame(tickScale);
+  if (!anim) return;
+  const t = Math.min((now - anim.start) / anim.dur, 1);
+  let eased;
+  if (anim.to > anim.from) {
+    const c1 = 1.70158, c3 = c1 + 1;
+    eased = 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+  } else {
+    eased = t * t;
+  }
+  const s = (anim.from + (anim.to - anim.from) * eased) * zoomFactor;
+  plane.setAttribute('scale', `${s} ${s} ${s}`);
+  if (t >= 1) {
+    const cb = anim.cb; anim = null;
+    if (cb) cb();
+  }
+})();
 
 // ============================================================
-// 4. ЦИКЛ: ended → fade-out → reset → fade-in
+// 5. ЦИКЛ
 // ============================================================
 video.addEventListener('ended', () => {
   if (!targetVisible) return;
-  console.log('🔁 Цикл');
   animateScale(1, 0.01, FADE_OUT_MS, () => {
     video.currentTime = 0;
-    video.play().then(() => {
-      animateScale(0.01, 1, FADE_IN_MS);
-    }).catch(e => console.warn('replay:', e));
+    video.play().then(() => animateScale(0.01, 1, FADE_IN_MS)).catch(e=>{});
   });
 });
 
 // ============================================================
-// 5. СТАРТ
+// 6. СТАРТ
 // ============================================================
 sceneEl.addEventListener('renderstart', () => {
   const canvas = sceneEl.canvas;
@@ -295,100 +284,77 @@ startBtn.addEventListener('click', async () => {
   scan.classList.add('show');
   hint.classList.remove('hide');
 
-  // Розблоковуємо аудіо + запускаємо відео у фоні (muted)
   try {
-    video.muted = false;
-    video.volume = 1;
+    video.muted = false; video.volume = 1;
     await video.play();
     video.pause();
     video.currentTime = 0;
 
-    video.muted = true;
-    video.volume = 0;
+    video.muted = true; video.volume = 0;
     await video.play();
-    console.log('✅ Video playing in background (muted)');
-  } catch (e) {
-    console.warn('video unlock:', e);
-  }
+  } catch (e) { console.warn('unlock:', e); }
 
-  // Запускаємо MindAR
   const sys = sceneEl.systems['mindar-image-system'];
   if (sys) await sys.start();
 });
 
 // ============================================================
-// 6. ТРЕКІНГ — показуємо площину ТІЛЬКИ коли є кадр
+// 7. ТРЕКІНГ
 // ============================================================
 const targetEl = document.querySelector('[mindar-image-target]');
 
 targetEl.addEventListener('targetFound', () => {
   targetVisible = true;
-
   scan.classList.remove('show');
   hint.classList.add('hide');
   hud.classList.add('show');
 
-  // Перевіряємо чи є кадр
-  const showPlane = () => {
-    if (video.readyState < 2) {
-      // ще немає кадру — чекаємо
-      requestAnimationFrame(showPlane);
-      return;
-    }
-    arPlane.setAttribute('visible', 'true');
+  const show = () => {
+    if (video.readyState < 2) { requestAnimationFrame(show); return; }
+    plane.setAttribute('visible', 'true');
     animateScale(0.01, 1, FADE_IN_MS);
   };
-  showPlane();
+  show();
 
-  // Увімкнути звук миттєво (відео вже грає)
-  video.muted = false;
-  video.volume = 1;
-
-  if (video.paused) {
-    video.play().catch(e => console.warn('play:', e));
-  }
+  video.muted = false; video.volume = 1;
+  if (video.paused) video.play().catch(e=>{});
 
   iconPlay.innerHTML = ICON_PAUSE;
 });
 
 targetEl.addEventListener('targetLost', () => {
   targetVisible = false;
-
   scan.classList.add('show');
   hint.classList.remove('hide');
   hud.classList.remove('show');
 
-  video.muted = true;
-  video.volume = 0;
+  video.muted = true; video.volume = 0;
 
   animateScale(1, 0.01, FADE_OUT_MS, () => {
-    if (!targetVisible) {
-      arPlane.setAttribute('visible', 'false');
-    }
+    if (targetVisible) return;
+    plane.setAttribute('visible', 'false');
+    setTimeout(() => { if (!targetVisible) video.pause(); }, 80);
   });
 });
 
 // ============================================================
-// 7. КНОПКИ
+// 8. КНОПКИ
 // ============================================================
 btnPlay.addEventListener('click', () => {
   if (!targetVisible) return;
   if (video.paused) {
-    video.muted = false;
-    video.volume = 1;
+    video.muted = false; video.volume = 1;
     video.play().catch(()=>{});
   } else {
-    video.muted = true;
-    video.volume = 0;
+    video.muted = true; video.volume = 0;
     video.pause();
   }
 });
 
 btnReset.addEventListener('click', () => {
   zoomFactor = 1.0;
-  if (!animScale) {
-    arPlane.setAttribute('scale', '1 1 1');
-  }
+  const s = 1;
+  plane.setAttribute('scale', `${s} ${s} ${s}`);
   showZoom();
 });
 
@@ -397,7 +363,7 @@ setInterval(() => {
 }, 300);
 
 // ============================================================
-// 8. ZOOM
+// 9. ZOOM
 // ============================================================
 const dist = t => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
 
@@ -419,8 +385,8 @@ document.addEventListener('touchmove', e => {
   if (e.touches.length === 2 && initialPinch > 0) {
     const ratio = dist(e.touches) / initialPinch;
     zoomFactor = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, initialZoom * ratio));
-    const s = zoomFactor;
-    arPlane.setAttribute('scale', `${s} ${s} ${s}`);
+    const s = (anim ? anim.to : 1) * zoomFactor;
+    plane.setAttribute('scale', `${s} ${s} ${s}`);
     showZoom();
   }
 }, { passive: true });
@@ -430,12 +396,14 @@ document.addEventListener('touchend', e => {
 }, { passive: true });
 
 // ============================================================
-// 9. ВКЛАДКА У ФОНІ
+// 10. ФОН
 // ============================================================
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
-    video.muted = true;
-    video.volume = 0;
+    video.muted = true; video.volume = 0;
+  } else if (targetVisible) {
+    video.muted = false; video.volume = 1;
+    if (video.paused) video.play().catch(()=>{});
   }
 });
 
