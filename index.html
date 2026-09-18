@@ -40,8 +40,9 @@
   #start p{color:rgba(255,255,255,.55);font-size:14px;margin:0 0 32px;text-align:center;line-height:1.5;padding:0 32px}
   #start button{padding:16px 44px;border:0;border-radius:50px;background:linear-gradient(135deg,#6c63ff,#a855f7);color:#fff;font-size:16px;font-weight:600;box-shadow:0 8px 32px rgba(108,99,255,.5);cursor:pointer}
   #start button:active{transform:scale(.95)}
+  #start button:disabled{opacity:.5;cursor:not-allowed}
   #start .ver{margin-top:20px;font-size:11px;color:rgba(108,99,255,.8);font-family:monospace}
-  #start .status{margin-top:10px;font-size:11px;color:rgba(255,255,255,.4);font-family:monospace;height:14px}
+  #start .status{margin-top:10px;font-size:11px;color:rgba(255,255,255,.5);font-family:monospace;height:14px}
 
   #hint{position:fixed;bottom:calc(100px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);color:#fff;font-size:14px;background:rgba(0,0,0,.6);padding:10px 22px;border-radius:20px;z-index:150;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);transition:opacity .4s;pointer-events:none;white-space:nowrap}
   #hint.hide{opacity:0}
@@ -57,9 +58,9 @@
 <div id="start">
   <h1>AR Фотоальбом</h1>
   <p>Наведіть камеру на фотографію<br>Масштаб — двома пальцями</p>
-  <button id="start-btn">▶ Почати</button>
+  <button id="start-btn" disabled>▶ Почати</button>
   <div class="status" id="status">Завантаження відео…</div>
-  <div class="ver" id="ver">v5.0</div>
+  <div class="ver" id="ver">v6.0</div>
 </div>
 
 <div id="scan">
@@ -72,7 +73,7 @@
 
 <div id="hint" class="hide">Наведіть камеру на фотографію</div>
 <div id="zoom">1.00×</div>
-<div id="build">v5.0</div>
+<div id="build">v6.0</div>
 
 <div id="hud">
   <button class="btn" id="btn-play">
@@ -91,23 +92,29 @@
   embedded>
   <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
   <a-entity mindar-image-target="targetIndex: 0">
-    <a-video id="ar-video" src="#vid" width="1" height="1" position="0 0 0.001"
+    <a-plane id="ar-video-plane"
+             width="1" height="1"
+             position="0 0 0.001"
              rotation="0 0 0"
              material="shader: flat; side: double; transparent: true; opacity: 1;"
              visible="false"
-             scale="0.01 0.01 0.01"></a-video>
+             scale="0.01 0.01 0.01"></a-plane>
   </a-entity>
 </a-scene>
 
-<video id="vid" playsinline webkit-playsinline crossorigin="anonymous" preload="auto"
-  style="display:none;position:absolute;left:-9999px"></video>
+<!-- ⚠️ ВАЖЛИВО: НЕ display:none! Інакше iOS Safari не створює текстуру -->
+<video id="vid"
+  src="https://files.catbox.moe/y5fotd.mp4"
+  playsinline webkit-playsinline muted
+  crossorigin="anonymous"
+  preload="auto"
+  style="position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0;pointer-events:none"></video>
 
 <script>
 // ============================================================
 // КОНФІГ
 // ============================================================
-const VERSION = 'v5.0';
-const VIDEO_URL = 'https://files.catbox.moe/y5fotd.mp4';
+const VERSION = 'v6.0';
 const ZOOM_MIN = 0.3;
 const ZOOM_MAX = 3.0;
 const FADE_IN_MS = 700;
@@ -125,7 +132,7 @@ const FADE_OUT_MS = 500;
 // ЕЛЕМЕНТИ
 // ============================================================
 const video = document.getElementById('vid');
-const arVideo = document.getElementById('ar-video');
+const arPlane = document.getElementById('ar-video-plane');
 const sceneEl = document.querySelector('a-scene');
 const startScreen = document.getElementById('start');
 const startBtn = document.getElementById('start-btn');
@@ -144,54 +151,87 @@ const ICON_PAUSE = '<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>';
 // ============================================================
 // СТАН
 // ============================================================
-let targetVisible = false;   // таргет зараз у кадрі
-let videoReady = false;      // відео завантажено
-let videoPlaying = false;    // відео грає (у фоні завжди)
-let userPaused = false;      // користувач натиснув паузу
+let targetVisible = false;
+let videoReady = false;
+let firstFrameShown = false;
 let zoomFactor = 1.0;
 let initialPinch = 0;
 let initialZoom = 1.0;
 let animScale = null;
+let texture = null;
+let material = null;
 
 video.muted = true;
 video.volume = 0;
 
 // ============================================================
-// 1. PRELOAD — fetch → blob (прибирає затримку)
-// ============================================================
-(async function preloadVideo() {
-  try {
-    statusEl.textContent = 'Завантаження відео…';
-    const resp = await fetch(VIDEO_URL);
-    if (!resp.ok) throw new Error('HTTP ' + resp.status);
-    const blob = await resp.blob();
-    video.src = URL.createObjectURL(blob);
-    console.log('✅ Blob loaded:', (blob.size/1024/1024).toFixed(2), 'MB');
-  } catch (e) {
-    console.warn('⚠️ Blob failed, direct URL:', e);
-    video.src = VIDEO_URL;
-  }
-  video.load();
-
-  video.addEventListener('canplaythrough', () => {
-    videoReady = true;
-    statusEl.textContent = '✅ Готово до старту';
-    console.log('✅ Video ready');
-  }, { once: true });
-})();
-
-// ============================================================
-// 2. ПРОПОРЦІЇ — площина за реальними розмірами відео
+// 1. ЗАВАНТАЖЕННЯ ВІДЕО — без fetch, тільки src
 // ============================================================
 video.addEventListener('loadedmetadata', () => {
   const aspect = video.videoWidth / video.videoHeight;
   let w, h;
   if (aspect >= 1) { w = 1; h = 1 / aspect; }
   else { w = aspect; h = 1; }
-  arVideo.setAttribute('width', w);
-  arVideo.setAttribute('height', h);
+  arPlane.setAttribute('width', w);
+  arPlane.setAttribute('height', h);
   console.log(`✅ Aspect ${aspect.toFixed(3)} → ${w.toFixed(3)}×${h.toFixed(3)}`);
 });
+
+video.addEventListener('canplaythrough', () => {
+  if (videoReady) return;
+  videoReady = true;
+  startBtn.disabled = false;
+  statusEl.textContent = '✅ Готово до старту';
+  console.log('✅ Video canplaythrough');
+}, { once: true });
+
+// Прогрес завантаження
+video.addEventListener('progress', () => {
+  if (!videoReady && video.buffered.length > 0) {
+    const pct = Math.round((video.buffered.end(0) / video.duration) * 100);
+    statusEl.textContent = `Завантаження… ${pct}%`;
+  }
+});
+
+video.load();
+
+// ============================================================
+// 2. СТВОРЕННЯ VIDEO TEXTURE на a-plane
+// ============================================================
+function setupTexture() {
+  const mesh = arPlane.getObject3D('mesh');
+  if (!mesh) {
+    requestAnimationFrame(setupTexture);
+    return;
+  }
+
+  texture = new THREE.VideoTexture(video);
+  texture.minFilter = THREE.LinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.format = THREE.RGBAFormat;
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.generateMipmaps = false;
+
+  material = new THREE.MeshBasicMaterial({
+    map: texture,
+    side: THREE.DoubleSide,
+    toneMapped: false,
+    transparent: true,
+    opacity: 1
+  });
+
+  mesh.material = material;
+  console.log('✅ VideoTexture прив\'язана до a-plane');
+
+  // Tick для оновлення текстури
+  function tick() {
+    requestAnimationFrame(tick);
+    if (texture && video.readyState >= 2 && !video.paused && !video.ended) {
+      texture.needsUpdate = true;
+    }
+  }
+  tick();
+}
 
 // ============================================================
 // 3. АНІМАЦІЯ SCALE
@@ -205,15 +245,13 @@ function tickScale(now) {
     const t = Math.min((now - animScale.start) / animScale.dur, 1);
     let eased;
     if (animScale.to > animScale.from) {
-      // ease-out-back (з «відскоком»)
       const c1 = 1.70158, c3 = c1 + 1;
       eased = 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
     } else {
-      // ease-in (плавне зникнення)
       eased = t * t;
     }
     const s = animScale.from + (animScale.to - animScale.from) * eased;
-    arVideo.setAttribute('scale', `${s} ${s} ${s}`);
+    arPlane.setAttribute('scale', `${s} ${s} ${s}`);
 
     if (t >= 1) {
       const cb = animScale.cb;
@@ -229,7 +267,7 @@ requestAnimationFrame(tickScale);
 // 4. ЦИКЛ: ended → fade-out → reset → fade-in
 // ============================================================
 video.addEventListener('ended', () => {
-  if (!targetVisible || userPaused) return;
+  if (!targetVisible) return;
   console.log('🔁 Цикл');
   animateScale(1, 0.01, FADE_OUT_MS, () => {
     video.currentTime = 0;
@@ -249,6 +287,7 @@ sceneEl.addEventListener('renderstart', () => {
     const gl = canvas.getContext('webgl') || canvas.getContext('webgl2');
     if (gl) gl.clearColor(0, 0, 0, 0);
   }
+  setupTexture();
 });
 
 startBtn.addEventListener('click', async () => {
@@ -256,29 +295,17 @@ startBtn.addEventListener('click', async () => {
   scan.classList.add('show');
   hint.classList.remove('hide');
 
-  // Чекаємо готовності відео
-  if (!videoReady) {
-    statusEl.textContent = 'Чекаємо відео…';
-    await new Promise(res => {
-      const t = setTimeout(res, 3000);
-      video.addEventListener('canplaythrough', () => { clearTimeout(t); res(); }, { once: true });
-    });
-  }
-
-  // 🎯 ГОЛОВНЕ: запускаємо відео у фоні і тримаємо його граючим
+  // Розблоковуємо аудіо + запускаємо відео у фоні (muted)
   try {
-    // Розблокувати звук (user gesture) — коротко з unmuted
     video.muted = false;
     video.volume = 1;
     await video.play();
     video.pause();
     video.currentTime = 0;
 
-    // Тепер запускаємо остаточно — muted, але грає
     video.muted = true;
     video.volume = 0;
     await video.play();
-    videoPlaying = true;
     console.log('✅ Video playing in background (muted)');
   } catch (e) {
     console.warn('video unlock:', e);
@@ -290,27 +317,33 @@ startBtn.addEventListener('click', async () => {
 });
 
 // ============================================================
-// 6. ТРЕКІНГ — миттєві реакції
+// 6. ТРЕКІНГ — показуємо площину ТІЛЬКИ коли є кадр
 // ============================================================
 const targetEl = document.querySelector('[mindar-image-target]');
 
 targetEl.addEventListener('targetFound', () => {
   targetVisible = true;
-  userPaused = false;
 
   scan.classList.remove('show');
   hint.classList.add('hide');
   hud.classList.add('show');
 
-  // 🎯 МИТТЄВО: показати площину + анімація
-  arVideo.setAttribute('visible', 'true');
-  animateScale(0.01, 1, FADE_IN_MS);
+  // Перевіряємо чи є кадр
+  const showPlane = () => {
+    if (video.readyState < 2) {
+      // ще немає кадру — чекаємо
+      requestAnimationFrame(showPlane);
+      return;
+    }
+    arPlane.setAttribute('visible', 'true');
+    animateScale(0.01, 1, FADE_IN_MS);
+  };
+  showPlane();
 
-  // 🎯 МИТТЄВО: увімкнути звук (відео вже грає)
+  // Увімкнути звук миттєво (відео вже грає)
   video.muted = false;
   video.volume = 1;
 
-  // Якщо відео не грає (було пауза) — запустити
   if (video.paused) {
     video.play().catch(e => console.warn('play:', e));
   }
@@ -325,14 +358,12 @@ targetEl.addEventListener('targetLost', () => {
   hint.classList.remove('hide');
   hud.classList.remove('show');
 
-  // 🎯 МИТТЄВО: глушимо звук (відео продовжує грати у фоні)
   video.muted = true;
   video.volume = 0;
 
-  // Ховаємо площину з анімацією
   animateScale(1, 0.01, FADE_OUT_MS, () => {
     if (!targetVisible) {
-      arVideo.setAttribute('visible', 'false');
+      arPlane.setAttribute('visible', 'false');
     }
   });
 });
@@ -343,12 +374,10 @@ targetEl.addEventListener('targetLost', () => {
 btnPlay.addEventListener('click', () => {
   if (!targetVisible) return;
   if (video.paused) {
-    userPaused = false;
     video.muted = false;
     video.volume = 1;
     video.play().catch(()=>{});
   } else {
-    userPaused = true;
     video.muted = true;
     video.volume = 0;
     video.pause();
@@ -358,7 +387,7 @@ btnPlay.addEventListener('click', () => {
 btnReset.addEventListener('click', () => {
   zoomFactor = 1.0;
   if (!animScale) {
-    arVideo.setAttribute('scale', '1 1 1');
+    arPlane.setAttribute('scale', '1 1 1');
   }
   showZoom();
 });
@@ -391,7 +420,7 @@ document.addEventListener('touchmove', e => {
     const ratio = dist(e.touches) / initialPinch;
     zoomFactor = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, initialZoom * ratio));
     const s = zoomFactor;
-    arVideo.setAttribute('scale', `${s} ${s} ${s}`);
+    arPlane.setAttribute('scale', `${s} ${s} ${s}`);
     showZoom();
   }
 }, { passive: true });
