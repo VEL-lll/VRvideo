@@ -1,55 +1,91 @@
 <!DOCTYPE html>
-<html>
+<html lang="uk">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
     <title>Оживаючий фотоальбом</title>
-    <!-- Підключаємо A-Frame та AR.js з CDN -->
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
     <style>
-        body { margin: 0; overflow: hidden; }
-        .arjs-loader {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0,0,0,0.8); display: flex;
-            justify-content: center; align-items: center; color: white;
-            font-family: sans-serif; z-index: 999;
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; overflow: hidden; background: #000; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+
+        /* Екран запуску */
+        #start-screen {
+            position: fixed; inset: 0; z-index: 9999;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #fff; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            text-align: center; padding: 24px;
+            transition: opacity 0.5s ease;
+        }
+        #start-screen h1 { font-size: 24px; font-weight: 600; margin-bottom: 12px; }
+        #start-screen p { font-size: 15px; color: #aaa; margin-bottom: 32px; max-width: 320px; line-height: 1.5; }
+        #start-btn {
+            background: #fff; color: #16213e; border: none;
+            padding: 16px 48px; font-size: 17px; font-weight: 600;
+            border-radius: 50px; cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: 0 8px 24px rgba(255,255,255,0.15);
+        }
+        #start-btn:active { transform: scale(0.96); }
+
+        /* Маленький індикатор завантаження відео */
+        #video-loading {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.7); color: #fff;
+            padding: 8px 16px; border-radius: 20px; font-size: 13px;
+            display: none; z-index: 100;
+        }
+
+        /* Ховаємо весь зайвий інтерфейс AR.js та A-Frame */
+        .arjs-loader, .a-loader-title, .a-enter-vr,
+        .a-enter-ar, .a-orientation-modal, .arjs-debugUI {
+            display: none !important;
         }
     </style>
 </head>
 <body>
-    <!-- Індикатор завантаження -->
-    <div class="arjs-loader"><div>Завантаження AR, зачекайте...</div></div>
 
+    <!-- Екран запуску (потрібен для розблокування відео) -->
+    <div id="start-screen">
+        <h1>📸 Оживаючий альбом</h1>
+        <p>Наведіть камеру на фото, щоб побачити відео</p>
+        <button id="start-btn">Почати</button>
+    </div>
+
+    <!-- Індикатор завантаження відео -->
+    <div id="video-loading">Завантаження відео...</div>
+
+    <!-- AR сцена -->
     <a-scene
-        vr-mode-ui="enabled: false;"
-        renderer="logarithmicDepthBuffer: true; physicallyCorrectLights: true;"
+        vr-mode-ui="enabled: false"
+        renderer="logarithmicDepthBuffer: true; antialias: true;"
         embedded
-        arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false;"
+        arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
+        loading-screen="enabled: false"
     >
-        <!-- Блок з ресурсами (відео) -->
-        <a-assets>
-            <!-- Вказуємо пряме посилання на відео. Додано crossorigin для зовнішніх посилань -->
-            <video id="video1" src="https://files.catbox.moe/y5fotd.mp4" preload="auto" loop muted playsinline crossorigin="anonymous"></video>
+        <a-assets timeout="15000">
+            <video id="video1"
+                   src="https://files.catbox.moe/y5fotd.mp4"
+                   preload="auto"
+                   loop muted playsinline webkit-playsinline
+                   crossorigin="anonymous"></video>
         </a-assets>
 
-        <!-- Маркер: вказуємо назву файлу targets (без розширення .mind) -->
         <a-nft
             type="nft"
-            url="targets" 
+            url="targets"
             smooth="true"
-            smoothCount="10"
+            smoothCount="5"
             smoothTolerance="0.01"
             smoothThreshold="5"
         >
-            <!-- Відео, яке буде накладено на маркер -->
-            <!-- Співвідношення сторін 16:9 (width=1, height=0.5625) -->
-            <!-- Якщо відео вертикальне, змініть на width="0.5625" height="1" -->
             <a-video
                 src="#video1"
                 position="0 0 0"
                 width="1"
-                height="0.5625" 
+                height="0.5625"
                 rotation="-90 0 0"
             ></a-video>
         </a-nft>
@@ -57,31 +93,65 @@
         <a-entity camera></a-entity>
     </a-scene>
 
-    <!-- Скрипт для запуску відео при знаходженні маркера -->
     <script>
-        window.onload = function() {
-            const videoElement = document.querySelector('#video1');
-            const marker = document.querySelector('a-nft');
-            const loader = document.querySelector('.arjs-loader');
+        (function () {
+            const startScreen = document.getElementById('start-screen');
+            const startBtn = document.getElementById('start-btn');
+            const video = document.getElementById('video1');
+            const loadingIndicator = document.getElementById('video-loading');
+            let started = false;
 
-            // Ховаємо лоадер, коли сцена готова
-            document.querySelector('a-scene').addEventListener('loaded', function () {
-                loader.style.display = 'none';
+            // Стан завантаження відео
+            video.addEventListener('waiting', () => loadingIndicator.style.display = 'block');
+            video.addEventListener('canplay', () => loadingIndicator.style.display = 'none');
+            video.addEventListener('error', (e) => {
+                console.error('Помилка відео:', e);
+                loadingIndicator.textContent = 'Помилка завантаження відео';
+                loadingIndicator.style.display = 'block';
             });
 
-            // Відтворення відео при появі маркера
-            marker.addEventListener('markerFound', function() {
-                videoElement.play().catch(e => {
-                    console.log("Помилка автозапуску відео. Потрібна взаємодія користувача:", e);
+            startBtn.addEventListener('click', async () => {
+                if (started) return;
+                started = true;
+
+                // 1. Розблоковуємо відео простим play/pause
+                try {
+                    video.muted = true;
+                    await video.play();
+                    video.pause();
+                    video.currentTime = 0;
+                } catch (err) {
+                    console.log('Розблокування відео:', err);
+                }
+
+                // 2. Ховаємо екран запуску
+                startScreen.style.opacity = '0';
+                setTimeout(() => startScreen.style.display = 'none', 500);
+
+                // 3. Даємо відео час завантажитися перед AR
+                video.load();
+            });
+
+            // Обробники маркера (прив'язуємо один раз після завантаження сцени)
+            const scene = document.querySelector('a-scene');
+            scene.addEventListener('loaded', () => {
+                const marker = document.querySelector('a-nft');
+                if (!marker) return;
+
+                marker.addEventListener('markerFound', () => {
+                    if (!started) return;
+                    video.muted = false;      // вмикаємо звук після дозволу
+                    video.play().catch(err => {
+                        console.log('Помилка відтворення:', err);
+                    });
+                });
+
+                marker.addEventListener('markerLost', () => {
+                    video.pause();
+                    video.currentTime = 0;
                 });
             });
-
-            // Пауза відео, коли маркер зникає з поля зору
-            marker.addEventListener('markerLost', function() {
-                videoElement.pause();
-                videoElement.currentTime = 0; // Скидаємо відео на початок
-            });
-        };
+        })();
     </script>
 </body>
 </html>
